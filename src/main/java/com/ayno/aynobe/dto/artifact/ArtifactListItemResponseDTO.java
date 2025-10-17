@@ -14,7 +14,6 @@ import lombok.*;
 public class ArtifactListItemResponseDTO {
     private Long artifactId;
     private String artifactTitle;
-    private String thumbnailUrl;
     private Integer aiUsagePercent;
     private Long viewCount;
     private Long likeCount;
@@ -27,7 +26,6 @@ public class ArtifactListItemResponseDTO {
         return ArtifactListItemResponseDTO.builder()
                 .artifactId(artifact.getArtifactId())
                 .artifactTitle(artifact.getArtifactTitle())
-                .thumbnailUrl(artifact.getThumbnailUrl())
                 .aiUsagePercent(artifact.getAiUsagePercent())
                 .viewCount(artifact.getViewCount())
                 .likeCount(artifact.getLikeCount())

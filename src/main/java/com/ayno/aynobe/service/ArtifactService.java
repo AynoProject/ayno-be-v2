@@ -11,6 +11,7 @@ import com.ayno.aynobe.entity.enums.VisibilityType;
 import com.ayno.aynobe.repository.ArtifactRepository;
 import com.ayno.aynobe.repository.WorkflowRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -94,11 +95,12 @@ public class ArtifactService {
         // 미디어 추가 (도메인 메서드)
         artifact.addMediasFrom(requestDto.getMedias());
 
-        Artifact saved = artifactRepository.save(artifact);
-
-        return ArtifactCreateResponseDTO.builder()
-                .artifactId(saved.getArtifactId())
-                .build();
+        try {
+            Artifact saved = artifactRepository.saveAndFlush(artifact);
+            return new ArtifactCreateResponseDTO(saved.getArtifactId());
+        } catch (DataIntegrityViolationException e) {
+            throw CustomException.badRequest("중복된 이미지가 포함되어 저장에 실패했습니다. : " + e);
+        }
     }
 
     private void validateForCreate(ArtifactCreateRequestDTO dto) {
@@ -109,21 +111,19 @@ public class ArtifactService {
 
     @Transactional
     public ArtifactUpdateResponseDTO update(User actor, Long artifactId, ArtifactUpdateRequestDTO dto) {
-        // 0) 로드(+user, medias는 Lazy 컬렉션이므로 트랜잭션 내 접근)
         Artifact artifact = artifactRepository.findById(artifactId)
                 .orElseThrow(() -> CustomException.notFound("존재하지 않는 결과물입니다."));
 
-        // 1) 권한: 오너만
         if (!artifact.getUser().getUserId().equals(actor.getUserId())) {
             throw CustomException.forbidden("본인이 등록한 결과물만 수정할 수 있습니다.");
         }
 
-        // 2) 검증: slug 유니크(자기 자신 제외)
+        // 검증: slug 유니크(자기 자신 제외)
         if (artifactRepository.existsBySlugAndArtifactIdNot(dto.getSlug(), artifactId)) {
             throw CustomException.duplicate("중복된 슬러그입니다: " + dto.getSlug());
         }
 
-        // 3) 참조 프리로드(옵션): 존재 확인 후 프록시 부여
+        // 참조 프리로드(옵션): 존재 확인 후 프록시 부여
         Workflow workflow = null;
         if (dto.getWorkflowId() != null) {
             Long wfId = dto.getWorkflowId();
@@ -133,17 +133,20 @@ public class ArtifactService {
             workflow = workflowRepository.getReferenceById(wfId);
         }
 
-        // 4) 도메인 위임(더티체킹)
+        // 도메인 위임(더티체킹)
         artifact.applyHeader(dto);
         artifact.assignWorkflow(workflow);            // nullable 허용
         artifact.replaceMediasFrom(dto.getMedias());  // 전체 교체
 
-        // 5) 저장(변경감지)
-        Artifact saved = artifactRepository.save(artifact);
-
-        return ArtifactUpdateResponseDTO.builder()
-                .artifactId(saved.getArtifactId())
-                .build();
+        try {
+            Artifact saved = artifactRepository.saveAndFlush(artifact);
+            return ArtifactUpdateResponseDTO.builder()
+                    .artifactId(saved.getArtifactId())
+                    .build();
+        } catch (DataIntegrityViolationException e) {
+            // (artifactId, baseKey) 유니크나 coverKey 유니크 위반 등
+            throw CustomException.badRequest("미디어 중복 또는 제약 조건 위반으로 수정에 실패했습니다. : " + e);
+        }
     }
 
     @Transactional

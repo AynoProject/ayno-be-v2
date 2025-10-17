@@ -1,5 +1,6 @@
 package com.ayno.aynobe.entity;
 
+import com.ayno.aynobe.config.exception.CustomException;
 import com.ayno.aynobe.dto.artifact.ArtifactCreateRequestDTO;
 import com.ayno.aynobe.dto.artifact.ArtifactUpdateRequestDTO;
 import com.ayno.aynobe.entity.enums.FlowType;
@@ -9,7 +10,9 @@ import jakarta.validation.constraints.*;
 import lombok.*;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @NoArgsConstructor
@@ -67,10 +70,6 @@ public class Artifact extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private VisibilityType visibility;
 
-    @Pattern(regexp = "^https://.+", message = "HTTPS URL만 허용됩니다.")
-    @Column(length = 512)
-    private String thumbnailUrl;
-
     @NotBlank
     @Column(nullable = false, length = 256)
     private String slug;
@@ -98,7 +97,6 @@ public class Artifact extends BaseTimeEntity {
                 .isPremium(Boolean.TRUE.equals(dto.getIsPremium()))
                 .aiUsagePercent(dto.getAiUsagePercent())
                 .visibility(dto.getVisibility())
-                .thumbnailUrl(dto.getThumbnailUrl())
                 .slug(dto.getSlug())
                 .build();
     }
@@ -106,11 +104,35 @@ public class Artifact extends BaseTimeEntity {
     /** 미디어 일괄 추가 (DTO → Entity 변환 + 역참조 세팅) */
     public void addMediasFrom(List<ArtifactCreateRequestDTO.MediaDTO> mediaDtos) {
         if (mediaDtos == null || mediaDtos.isEmpty()) return;
-        for (ArtifactCreateRequestDTO.MediaDTO m : mediaDtos) {
-            ArtifactMedia media = ArtifactMedia.from(m);
-            media.assignArtifact(this);
-            this.medias.add(media);
+
+        // 1) baseKey 중복 제거(등장 순서 유지)
+        Map<String, ArtifactCreateRequestDTO.MediaDTO> unique = new LinkedHashMap<>();
+        for (var m : mediaDtos) {
+            unique.putIfAbsent(m.getBaseKey(), m);
         }
+        List<ArtifactCreateRequestDTO.MediaDTO> dedup = new ArrayList<>(unique.values());
+
+        // 2) 커버 개수 검증
+        long coverCnt = dedup.stream().filter(ArtifactCreateRequestDTO.MediaDTO::isCover).count();
+        if (coverCnt > 1) {
+            throw CustomException.badRequest("커버 이미지는 1개까지만 허용됩니다.");
+        }
+
+        // 3) 엔티티 변환 + 역참조 세팅
+        List<ArtifactMedia> list = new ArrayList<>(dedup.size());
+        for (var m : dedup) {
+            ArtifactMedia em = ArtifactMedia.from(m);
+            em.assignArtifact(this);
+            list.add(em);
+        }
+
+        // 4) 커버가 없으면 첫 번째를 커버로 지정
+        if (coverCnt == 0 && !list.isEmpty()) {
+            list.get(0).markAsCover();
+        }
+
+        // 5) 추가
+        this.medias.addAll(list);
     }
 
     public void applyHeader(ArtifactUpdateRequestDTO dto) {
@@ -120,7 +142,6 @@ public class Artifact extends BaseTimeEntity {
         this.visibility = dto.getVisibility();
         this.aiUsagePercent = dto.getAiUsagePercent();
         this.isPremium = Boolean.TRUE.equals(dto.getIsPremium());
-        this.thumbnailUrl = dto.getThumbnailUrl();
         this.slug = dto.getSlug();
     }
 
@@ -130,12 +151,29 @@ public class Artifact extends BaseTimeEntity {
 
     /** MVP: 미디어 전체 교체(기존 orphanRemoval=true 가정) */
     public void replaceMediasFrom(List<ArtifactUpdateRequestDTO.MediaDTO> mediaDtos) {
-        this.medias.clear(); // orphanRemoval로 삭제
+        this.medias.clear();                           // orphanRemoval=true 가정 → 기존 행 제거
         if (mediaDtos == null || mediaDtos.isEmpty()) return;
-        for (ArtifactUpdateRequestDTO.MediaDTO m : mediaDtos) {
-            ArtifactMedia media = ArtifactMedia.from(m);
-            media.assignArtifact(this);
-            this.medias.add(media);
+
+        // 1) baseKey 중복 제거 (등장 순서 유지)
+        Map<String, ArtifactUpdateRequestDTO.MediaDTO> unique = new LinkedHashMap<>();
+        for (var m : mediaDtos) unique.putIfAbsent(m.getBaseKey(), m);
+        List<ArtifactUpdateRequestDTO.MediaDTO> dedup = new ArrayList<>(unique.values());
+
+        // 2) 커버 개수 검증
+        long coverCnt = dedup.stream().filter(ArtifactUpdateRequestDTO.MediaDTO::isCover).count();
+        if (coverCnt > 1) throw new IllegalArgumentException("커버 이미지는 1개까지만 허용합니다.");
+
+        // 3) 엔티티 변환 + 역참조
+        List<ArtifactMedia> list = new ArrayList<>(dedup.size());
+        for (var m : dedup) {
+            ArtifactMedia em = ArtifactMedia.from(m); // baseKey / sortOrder / isCover / caption 모두 NOT NULL(캡션만 null)
+            em.assignArtifact(this);
+            list.add(em);
         }
+
+        // 4) 커버가 없다면 첫 번째를 커버
+        if (coverCnt == 0 && !list.isEmpty()) list.get(0).markAsCover();
+
+        this.medias.addAll(list);
     }
 }

@@ -33,10 +33,6 @@ public class ArtifactUpdateRequestDTO {
     @Builder.Default
     private Boolean isPremium = false;
 
-    @Pattern(regexp = "^https://.+", message = "HTTPS URL만 허용됩니다.")
-    @Size(max = 512)
-    private String thumbnailUrl;
-
     @NotBlank @Size(max = 256)
     private String slug;
 
@@ -59,8 +55,24 @@ public class ArtifactUpdateRequestDTO {
         private MediaType mediaType;
 
         @NotBlank
-        @Pattern(regexp = "^https://.+", message = "HTTPS URL만 허용됩니다.")
-        @Size(max = 1024)
-        private String mediaUrl;
+        @Size(max = 512)
+        @Schema(
+                description = "S3 상대 경로(baseKey). original.ext까지 포함",
+                example = "artifact/123/media/5e6b7bfa-cc41-47f3-86b5-f542d9cfb49a/original.ext"
+        )
+        private String baseKey;
+
+        /** 정렬 순서 (NOT NULL) */
+        @Schema(description = "정렬 순서(오름차순)", example = "0")
+        private int sortOrder;
+
+        /** 커버 여부 (NOT NULL) */
+        @Schema(description = "커버(대표) 이미지 여부", example = "false")
+        private boolean isCover;
+
+        /** 캡션만 NULL 허용 */
+        @Size(max = 256)
+        @Schema(description = "이미지 캡션(선택)", example = "최종 썸네일")
+        private String caption;
     }
 }
