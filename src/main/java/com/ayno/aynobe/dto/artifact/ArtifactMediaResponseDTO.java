@@ -14,13 +14,13 @@ import lombok.*;
 public class ArtifactMediaResponseDTO {
     private Long mediaId;
     private MediaType mediaType;
-    private String mediaUrl;
+    private String baseKey;
 
     public static ArtifactMediaResponseDTO from(ArtifactMedia m) {
         return ArtifactMediaResponseDTO.builder()
                 .mediaId(m.getMediaId())
                 .mediaType(m.getMediaType())
-                .mediaUrl(m.getMediaUrl())
+                .baseKey(m.getBaseKey())
                 .build();
     }
 }

@@ -76,7 +76,7 @@ public class WorkflowCreateRequestDTO {
         @NotBlank
         private String stepContent;
 
-        @NotBlank @Size(max = 512)
-        private String mediaUrl;
+        @Size(max = 512)
+        private String baseKey;
     }
 }

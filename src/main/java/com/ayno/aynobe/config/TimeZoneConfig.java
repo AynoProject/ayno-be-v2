@@ -1,4 +1,4 @@
-package com.ayno.aynobe.config.security;
+package com.ayno.aynobe.config;
 
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
