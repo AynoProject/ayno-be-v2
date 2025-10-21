@@ -47,7 +47,6 @@ public class UploadService {
         PutObjectRequest putObject = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(s3Key)
-                .contentLength(req.getBytes())
                 .contentType(contentType)
                 .build();
 

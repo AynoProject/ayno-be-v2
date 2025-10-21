@@ -81,7 +81,7 @@ public class Artifact extends BaseTimeEntity {
 
     @PrePersist
     void prePersist() {
-        if (visibility == null) visibility = VisibilityType.PUBLIC;
+        if (visibility == null) visibility = VisibilityType.PRIVATE;
         if (aiUsagePercent == null) aiUsagePercent = 0;
         if (isPremium == null) isPremium = false;
         if (viewCount == null) viewCount = 0L;
@@ -175,5 +175,15 @@ public class Artifact extends BaseTimeEntity {
         if (coverCnt == 0 && !list.isEmpty()) list.get(0).markAsCover();
 
         this.medias.addAll(list);
+    }
+
+    public void publish() {
+        if (this.visibility == VisibilityType.PUBLIC) return; // 이미 공개면 무시
+        this.visibility = VisibilityType.PUBLIC;
+    }
+
+    public void unpublish() {
+        if (this.visibility == VisibilityType.PRIVATE) return;
+        this.visibility = VisibilityType.PRIVATE;
     }
 }

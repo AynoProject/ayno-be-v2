@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class MediaPathGenerator {
     @Value("${media.s3.privatePrefix}") private String privatePrefix;
+    @Value("${media.s3.publicPrefix}")  private String publicPrefix;
 
     public String makeArtifactBaseKey(long artifactId, String uuid, String ext) {
         return "artifact/%d/media/%s/original.%s".formatted(artifactId, uuid, ext);
@@ -18,8 +19,11 @@ public class MediaPathGenerator {
                 .formatted(workflowId, sectionId, uuid, ext);
     }
 
-    /** S3에 올릴 실제 키(프리픽스 + baseKey) */
     public String toPrivateKey(String baseKey) {
         return privatePrefix + baseKey;
+    }
+
+    public String toPublicKey(String baseKey)  {
+        return publicPrefix  + baseKey;
     }
 }
