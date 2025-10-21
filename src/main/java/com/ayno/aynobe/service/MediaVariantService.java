@@ -58,6 +58,42 @@ public class MediaVariantService {
         }
     }
 
+    /**
+     * public 사본(원본 + 파생) 일괄 삭제.
+     * - 존재 유무 미리 확인하지 않고 바로 batch delete 요청
+     * - S3는 없는 키를 지우더라도 에러 없이 처리(Deleted/Errors 로만 리포트)하므로 안전
+     */
+    public void deletePublicCopies(String baseKey) {
+        String ext = extOf(baseKey);                       // ex) "png"
+        String publicDir = dirPrefix(path.toPublicKey(baseKey)); // ".../prod/public/.../media/<uuid>/"
+
+        // 원본 파일명 + 파생 파일명 목록
+        List<String> names = new ArrayList<>();
+        names.add("original." + ext);
+
+        if (IMAGE.contains(ext)) {
+            names.addAll(List.of("w320.jpg", "w800.jpg", "w1600.jpg"));
+        } else if (AUDIO.contains(ext)) {
+            // 오디오는 정책에 맞춰 추가/수정
+            names.addAll(List.of("a128.mp3", "preview30.mp3"));
+        } else {
+            // 지원하지 않는 확장자는 조용히 무시하거나 예외로 바꿔도 된다
+            return;
+        }
+
+        // S3 object identifiers 구성
+        List<ObjectIdentifier> objs = names.stream()
+                .map(n -> ObjectIdentifier.builder().key(publicDir + n).build())
+                .toList();
+
+        if (!objs.isEmpty()) {
+            s3Client.deleteObjects(DeleteObjectsRequest.builder()
+                    .bucket(bucket)
+                    .delete(Delete.builder().objects(objs).build())
+                    .build());
+        }
+    }
+
     /* =========== 이미지 파생 생성 =========== */
 
     private void ensureImageVariants(String originalPrivateKey) {
@@ -140,6 +176,11 @@ public class MediaVariantService {
     private static String extOf(String baseKey) {
         int dot = baseKey.lastIndexOf('.');
         return (dot > -1) ? baseKey.substring(dot + 1).toLowerCase() : "";
+    }
+
+    private static String dirPrefix(String keyWithOriginal) {
+        // 끝의 "/original.xxx" 만 잘라내고 뒤에 "/" 유지
+        return keyWithOriginal.replaceAll("/original\\.[^.]+$", "/");
     }
 
     private static boolean sneaky(RuntimeException e) { throw e; }

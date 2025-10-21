@@ -16,7 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "Artifact", description = "결과물 조회 API")
+@Tag(name = "Artifact", description = "결과물 관련 API")
 @RestController
 @RequestMapping("/api/artifacts")
 @RequiredArgsConstructor
@@ -74,7 +74,9 @@ public class ArtifactController {
         return ResponseEntity.ok(Response.success(result));
     }
 
-    @Operation(summary = "결과물 삭제", description = "본인이 등록한 결과물을 삭제합니다.")
+    @Operation(
+            summary = "결과물 삭제",
+            description = "본인이 등록한 결과물을 삭제합니다.")
     @DeleteMapping("/{artifactId}")
     public ResponseEntity<Response<ArtifactDeleteResponseDTO>> delete(
             @AuthenticationPrincipal CustomUserDetails principal,
@@ -84,13 +86,27 @@ public class ArtifactController {
         return ResponseEntity.ok(Response.success(result));
     }
 
-    // 공개로 전환 + 파생 보장 + public 복사
+    @Operation(
+            summary = "결과물 공개",
+            description = "본인이 등록한 결과물을 public으로 발행합니다.")
     @PutMapping("/{artifactId}/publish")
     public ResponseEntity<ArtifactPublishResponseDTO> publish(
             @AuthenticationPrincipal CustomUserDetails principal,
             @PathVariable long artifactId
     ) {
         var res = publishService.publishArtifact(principal.getUser(), artifactId);
+        return ResponseEntity.ok(res);
+    }
+
+    @Operation(
+            summary = "결과물 미공개",
+            description = "본인이 등록한 결과물을 unpublic으로 발행합니다.")
+    @PutMapping("/{artifactId}/unpublish")
+    public ResponseEntity<ArtifactPublishResponseDTO> unpublish(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @PathVariable long artifactId
+    ) {
+        var res = publishService.unpublishArtifact(principal.getUser(), artifactId);
         return ResponseEntity.ok(res);
     }
 

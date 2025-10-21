@@ -40,4 +40,26 @@ public class PublishService {
                 .publishedMediaCount(medias.size())
                 .build();
     }
+
+    @Transactional
+    public ArtifactPublishResponseDTO unpublishArtifact(User actor, long artifactId) {
+        var art = artifactRepository.findById(artifactId)
+                .orElseThrow(() -> CustomException.notFound("결과물 없음"));
+        if (!art.getUser().getUserId().equals(actor.getUserId()))
+            throw CustomException.forbidden("본인 결과물만 수정 불가");
+
+        var medias = artifactMediaRepository
+                .findByArtifact_ArtifactIdOrderBySortOrderAscMediaIdAsc(artifactId);
+
+        // 선택: public 사본 정리(삭제) — 운영 정책에 맞게 on/off
+        medias.forEach(m -> variantService.deletePublicCopies(m.getBaseKey()));
+
+        art.unpublish();
+
+        return ArtifactPublishResponseDTO.builder()
+                .artifactId(artifactId)
+                .visibility(art.getVisibility())
+                .publishedMediaCount(medias.size())
+                .build();
+    }
 }
