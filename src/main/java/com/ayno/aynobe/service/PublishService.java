@@ -18,7 +18,7 @@ import java.util.List;
 public class PublishService {
     private final ArtifactRepository artifactRepository;
     private final ArtifactMediaRepository artifactMediaRepository;
-    private final MediaVariantService variantService;
+    private final MediaVariantService mediavariantService;
 
     @Transactional
     public ArtifactPublishResponseDTO publishArtifact(User user, long artifactId) {
@@ -28,8 +28,8 @@ public class PublishService {
             throw CustomException.forbidden("본인 결과물만 발행 가능");
 
         List<ArtifactMedia> medias = artifactMediaRepository.findByArtifact_ArtifactIdOrderBySortOrderAscMediaIdAsc(artifactId);
-        for (var m : medias) {
-            variantService.publishOne(m.getBaseKey());
+        for (ArtifactMedia m : medias) {
+            mediavariantService.publishOne(m.getBaseKey());
         }
 
         artifact.publish();
@@ -43,22 +43,22 @@ public class PublishService {
 
     @Transactional
     public ArtifactPublishResponseDTO unpublishArtifact(User actor, long artifactId) {
-        var art = artifactRepository.findById(artifactId)
+        Artifact artifact = artifactRepository.findById(artifactId)
                 .orElseThrow(() -> CustomException.notFound("결과물 없음"));
-        if (!art.getUser().getUserId().equals(actor.getUserId()))
+        if (!artifact.getUser().getUserId().equals(actor.getUserId()))
             throw CustomException.forbidden("본인 결과물만 수정 불가");
 
-        var medias = artifactMediaRepository
+        List<ArtifactMedia> medias = artifactMediaRepository
                 .findByArtifact_ArtifactIdOrderBySortOrderAscMediaIdAsc(artifactId);
 
         // 선택: public 사본 정리(삭제) — 운영 정책에 맞게 on/off
-        medias.forEach(m -> variantService.deletePublicCopies(m.getBaseKey()));
+        medias.forEach(m -> mediavariantService.deletePublicCopies(m.getBaseKey()));
 
-        art.unpublish();
+        artifact.unpublish();
 
         return ArtifactPublishResponseDTO.builder()
                 .artifactId(artifactId)
-                .visibility(art.getVisibility())
+                .visibility(artifact.getVisibility())
                 .publishedMediaCount(medias.size())
                 .build();
     }

@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ArtifactService {
-
     private final ArtifactRepository artifactRepository;
     private final WorkflowRepository workflowRepository;
 

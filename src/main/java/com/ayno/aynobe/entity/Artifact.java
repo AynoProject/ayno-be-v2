@@ -38,8 +38,8 @@ public class Artifact extends BaseTimeEntity {
     @JoinColumn(name = "userId", nullable = false)
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workflowId")
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "workflowId") // Artifact 테이블이 FK를 가짐
     private Workflow workflow;
 
     @Enumerated(EnumType.STRING)

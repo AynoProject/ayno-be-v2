@@ -39,10 +39,6 @@ public class ArtifactMedia extends BaseTimeEntity {
     @Column(nullable = false, length = 20)
     private MediaType mediaType;
 
-    /**
-     * baseKey 예: artifact/123/media/{uuid}/original.ext
-     * 실제 노출 URL은 규약으로 w320/w800/w1600로 조합해서 사용.
-     */
     @NotBlank
     @Size(max = 512)
     @Column(nullable = false, length = 512)
