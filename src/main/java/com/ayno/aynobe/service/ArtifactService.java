@@ -4,12 +4,14 @@ import com.ayno.aynobe.config.exception.CustomException;
 import com.ayno.aynobe.dto.artifact.*;
 import com.ayno.aynobe.dto.common.PageResponseDTO;
 import com.ayno.aynobe.entity.Artifact;
+import com.ayno.aynobe.entity.ArtifactMedia;
 import com.ayno.aynobe.entity.User;
 import com.ayno.aynobe.entity.Workflow;
 import com.ayno.aynobe.entity.enums.FlowType;
 import com.ayno.aynobe.entity.enums.VisibilityType;
 import com.ayno.aynobe.repository.ArtifactRepository;
 import com.ayno.aynobe.repository.WorkflowRepository;
+import com.ayno.aynobe.service.s3.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
@@ -25,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class ArtifactService {
     private final ArtifactRepository artifactRepository;
     private final WorkflowRepository workflowRepository;
+    private final S3Service s3Service;
 
     public PageResponseDTO<ArtifactListItemResponseDTO> listPublic(
             FlowType category, int page, int size, String sort
@@ -158,7 +161,17 @@ public class ArtifactService {
             throw CustomException.forbidden("본인이 등록한 결과물만 삭제할 수 있습니다.");
         }
 
-        artifactRepository.delete(artifact); // orphanRemoval 로 미디어 자동 삭제
+        // 1. (신규) S3 물리적 파일 삭제
+        //    DB 삭제 전에 S3 파일을 먼저 삭제합니다.
+        for (ArtifactMedia media : artifact.getMedias()) {
+            s3Service.deleteImageSet(media.getBaseKey());
+        }
+
+        // 2. DB 삭제
+        //    orphanRemoval=true 설정에 의해 ArtifactMedia 레코드가 자동 삭제됩니다.
+        //    (만약 Workflow가 @OneToOne(cascade=ALL, orphanRemoval=true)이면 Workflow도 여기서 자동 삭제됨)
+        artifactRepository.delete(artifact);
+
         return ArtifactDeleteResponseDTO.builder()
                 .artifactId(artifactId)
                 .build();

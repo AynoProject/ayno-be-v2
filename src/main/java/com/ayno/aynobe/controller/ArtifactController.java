@@ -7,7 +7,7 @@ import com.ayno.aynobe.dto.common.PageResponseDTO;
 import com.ayno.aynobe.dto.common.Response;
 import com.ayno.aynobe.entity.enums.FlowType;
 import com.ayno.aynobe.service.ArtifactService;
-import com.ayno.aynobe.service.PublishService;
+import com.ayno.aynobe.service.s3.PublishService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;

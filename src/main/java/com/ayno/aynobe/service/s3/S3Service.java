@@ -1,4 +1,4 @@
-package com.ayno.aynobe.service;
+package com.ayno.aynobe.service.s3;
 
 import com.ayno.aynobe.config.exception.CustomException;
 import com.ayno.aynobe.config.util.MediaPathGenerator;
@@ -31,7 +31,7 @@ import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
-public class UploadService {
+public class S3Service {
 
     private static final Set<String> IMG = Set.of("jpg", "jpeg", "png", "webp");
     private static final Set<String> AUD = Set.of("mp3", "m4a", "wav");
@@ -115,6 +115,33 @@ public class UploadService {
         if (IMG.contains(ext)) {
             names.addAll(List.of("w320.jpg","w800.jpg","w1600.jpg")); // 혹시 있으면 같이 정리(멱등)
         }
+
+        var objects = names.stream()
+                .map(n -> ObjectIdentifier.builder().key(privateDir + n).build())
+                .toList();
+
+        if (!objects.isEmpty()) {
+            s3Client.deleteObjects(DeleteObjectsRequest.builder()
+                    .bucket(bucket)
+                    .delete(Delete.builder().objects(objects).build())
+                    .build());
+        }
+    }
+
+    public void deleteImageSet(String baseKey) {
+        if (baseKey == null || baseKey.isBlank()) {
+            return;
+        }
+
+        String ext = extOf(baseKey); // ".png" 등 확장자 추출 (기존 private 메소드 활용)
+        String privateDir = toPrivateDirPrefix(baseKey); // ".../prod/private/.../media/<uuid>/" (기존 private 메소드 활용)
+
+        List<String> names = new ArrayList<>();
+        names.add("original." + ext);
+        if (IMG.contains(ext)) {
+            names.addAll(List.of("w320.jpg", "w800.jpg", "w1600.jpg"));
+        }
+        // TODO: 만약 AUDIO 파생 파일이 있다면 여기에 추가 (예: "preview.mp3")
 
         var objects = names.stream()
                 .map(n -> ObjectIdentifier.builder().key(privateDir + n).build())

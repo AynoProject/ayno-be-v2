@@ -1,4 +1,4 @@
-package com.ayno.aynobe.service;
+package com.ayno.aynobe.service.s3;
 
 import com.ayno.aynobe.config.exception.CustomException;
 import com.ayno.aynobe.dto.asset.ArtifactPublishResponseDTO;

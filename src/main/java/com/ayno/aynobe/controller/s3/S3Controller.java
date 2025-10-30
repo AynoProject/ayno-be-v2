@@ -1,10 +1,10 @@
-package com.ayno.aynobe.controller;
+package com.ayno.aynobe.controller.s3;
 
 import com.ayno.aynobe.config.security.CustomUserDetails;
 import com.ayno.aynobe.dto.asset.UploadDeleteRequestDTO;
 import com.ayno.aynobe.dto.asset.UploadPresignRequestDTO;
 import com.ayno.aynobe.dto.asset.UploadPresignResponseDTO;
-import com.ayno.aynobe.service.UploadService;
+import com.ayno.aynobe.service.s3.S3Service;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -16,11 +16,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-@Tag(name = "Upload", description = "파일 업로드 관련 API")
+@Tag(name = "S3", description = "파일 업로드 관련 API")
 @RestController
 @RequiredArgsConstructor
-public class UploadController {
-    private final UploadService uploadService;
+public class S3Controller {
+    private final S3Service s3Service;
 
     @Operation(
             summary = "이미지 업로드 presign",
@@ -30,7 +30,7 @@ public class UploadController {
             @AuthenticationPrincipal CustomUserDetails principal,
             @RequestBody @Valid UploadPresignRequestDTO req
     ) {
-        return ResponseEntity.ok(uploadService.createPresign(principal.getUser(), req));
+        return ResponseEntity.ok(s3Service.createPresign(principal.getUser(), req));
     }
 
     @Operation(
@@ -42,7 +42,7 @@ public class UploadController {
             @AuthenticationPrincipal CustomUserDetails principal,
             @RequestBody @Valid UploadDeleteRequestDTO req
     ) {
-        uploadService.deletePrivateObject(principal.getUser(), req);
+        s3Service.deletePrivateObject(principal.getUser(), req);
         return ResponseEntity.noContent().build();
     }
 }
