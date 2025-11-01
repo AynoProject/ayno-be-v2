@@ -14,12 +14,6 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.*;
 
-/**
- * "발행" 시점에:
- *  1) private 경로의 원본 존재 확인
- *  2) 필요한 파생본(이미지: w320/w800/w1600 · 오디오는 당장 원본을 그대로 복사(임시)만 두고, 나중에 ffmpeg 연결 시 메서드만 교체
- *  3) 원본+파생을 public 경로로 복사
- */
 @Service
 @RequiredArgsConstructor
 public class MediaVariantService {
@@ -33,10 +27,6 @@ public class MediaVariantService {
     private static final Set<String> IMAGE = Set.of("jpg","jpeg","png","webp");
     private static final Set<String> AUDIO = Set.of("mp3","m4a","wav");
 
-    /**
-     * 발행 시 호출: baseKey(…/original.ext)를 기준으로
-     * 1) private 원본 확인 → 2) 파생 생성 → 3) public 복사
-     */
     public void publishOne(String baseKey) {
         String ext = extOf(baseKey);
         String originalPrivate = path.toPrivateKey(baseKey);
@@ -58,11 +48,6 @@ public class MediaVariantService {
         }
     }
 
-    /**
-     * public 사본(원본 + 파생) 일괄 삭제.
-     * - 존재 유무 미리 확인하지 않고 바로 batch delete 요청
-     * - S3는 없는 키를 지우더라도 에러 없이 처리(Deleted/Errors 로만 리포트)하므로 안전
-     */
     public void deletePublicCopies(String baseKey) {
         String ext = extOf(baseKey);                       // ex) "png"
         String publicDir = dirPrefix(path.toPublicKey(baseKey)); // ".../prod/public/.../media/<uuid>/"
@@ -120,11 +105,6 @@ public class MediaVariantService {
 
     /* =========== public 복사 =========== */
 
-    /**
-     * 주어진 파일명 목록(원본/파생)을 private → public로 복사.
-     * - baseKey: …/original.ext (prefix 제외)
-     * - fileNames: ["original.jpg", "w320.jpg"…]
-     */
     private void copyToPublic(String baseKey, List<String> fileNames) {
         String privatePrefix = path.toPrivateKey(baseKey).replaceAll("/original\\.[^.]+$", "/");
         String publicPrefix  = path.toPublicKey(baseKey).replaceAll("/original\\.[^.]+$", "/");
@@ -179,10 +159,8 @@ public class MediaVariantService {
     }
 
     private static String dirPrefix(String keyWithOriginal) {
-        // 끝의 "/original.xxx" 만 잘라내고 뒤에 "/" 유지
         return keyWithOriginal.replaceAll("/original\\.[^.]+$", "/");
     }
 
-    private static boolean sneaky(RuntimeException e) { throw e; }
     private static boolean sneaky(S3Exception e) { throw e; }
 }

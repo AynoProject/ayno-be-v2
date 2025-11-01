@@ -68,6 +68,7 @@ public class ArtifactService {
         return Sort.by(dir, field);
     }
 
+    @Transactional
     public ArtifactDetailResponseDTO getDetail(Long artifactId) {
         Artifact artifact = artifactRepository.findById(artifactId)
                 .orElseThrow(() -> CustomException.notFound("Artifact with id " + artifactId + " not found"));
@@ -152,24 +153,20 @@ public class ArtifactService {
     }
 
     @Transactional
-    public ArtifactDeleteResponseDTO delete(User actor, Long artifactId) {
+    public ArtifactDeleteResponseDTO delete(User user, Long artifactId) {
         Artifact artifact = artifactRepository.findById(artifactId)
                 .orElseThrow(() -> CustomException.notFound("존재하지 않는 결과물입니다."));
 
-        // 권한: 오너만
-        if (!artifact.getUser().getUserId().equals(actor.getUserId())) {
+        if (!artifact.getUser().getUserId().equals(user.getUserId())) {
             throw CustomException.forbidden("본인이 등록한 결과물만 삭제할 수 있습니다.");
         }
 
-        // 1. (신규) S3 물리적 파일 삭제
-        //    DB 삭제 전에 S3 파일을 먼저 삭제합니다.
+        // 1. S3 물리적 파일 삭제
         for (ArtifactMedia media : artifact.getMedias()) {
-            s3Service.deleteImageSet(media.getBaseKey());
+            s3Service.deleteS3MediaSet(media.getBaseKey());
         }
 
         // 2. DB 삭제
-        //    orphanRemoval=true 설정에 의해 ArtifactMedia 레코드가 자동 삭제됩니다.
-        //    (만약 Workflow가 @OneToOne(cascade=ALL, orphanRemoval=true)이면 Workflow도 여기서 자동 삭제됨)
         artifactRepository.delete(artifact);
 
         return ArtifactDeleteResponseDTO.builder()

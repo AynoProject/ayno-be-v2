@@ -60,19 +60,19 @@ public class S3Service {
         String s3Key = pathGen.toPrivateKey(baseKey);
         String contentType = mimeFromExt(req.getExt());
 
-        PutObjectRequest putObject = PutObjectRequest.builder()
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
                 .key(s3Key)
                 .contentType(contentType)
                 .build();
 
-        PutObjectPresignRequest presign = PutObjectPresignRequest.builder()
+        PutObjectPresignRequest putObjectPresignRequest = PutObjectPresignRequest.builder()
                 .signatureDuration(Duration.ofMinutes(5))
-                .putObjectRequest(putObject)
+                .putObjectRequest(putObjectRequest)
                 .build();
 
-        PresignedPutObjectRequest ppo = presigner.presignPutObject(presign);
-        URL url = ppo.url();
+        PresignedPutObjectRequest presignedPutObjectRequest = presigner.presignPutObject(putObjectPresignRequest);
+        URL url = presignedPutObjectRequest.url();
 
         return UploadPresignResponseDTO.builder()
                 .baseKey(baseKey)
@@ -82,14 +82,14 @@ public class S3Service {
     }
 
     @Transactional(readOnly = true)
-    public void deletePrivateObject(User actor, UploadDeleteRequestDTO req) {
+    public void deletePrivateObject(User user, UploadDeleteRequestDTO req) {
         // --- 권한 검증 ---
         switch (req.getScope()) {
             case ARTIFACT -> {
                 if (req.getArtifactId() == null) throw CustomException.badRequest("artifactId 필요");
                 var art = artifactRepository.findById(req.getArtifactId())
                         .orElseThrow(() -> CustomException.notFound("존재하지 않는 결과물입니다."));
-                if (!art.getUser().getUserId().equals(actor.getUserId()))
+                if (!art.getUser().getUserId().equals(user.getUserId()))
                     throw CustomException.forbidden("본인 결과물의 파일만 삭제할 수 있습니다.");
             }
             case SECTION -> {
@@ -97,7 +97,7 @@ public class S3Service {
                     throw CustomException.badRequest("workflowId/sectionId 필요");
                 var wf = workflowRepository.findById(req.getWorkflowId())
                         .orElseThrow(() -> CustomException.notFound("존재하지 않는 워크플로우입니다."));
-                if (!wf.getUser().getUserId().equals(actor.getUserId()))
+                if (!wf.getUser().getUserId().equals(user.getUserId()))
                     throw CustomException.forbidden("본인 워크플로우의 파일만 삭제할 수 있습니다.");
                 boolean ok = stepSectionRepository
                         .existsBySectionIdAndWorkflowStep_Workflow_WorkflowId(req.getSectionId(), req.getWorkflowId());
@@ -105,30 +105,11 @@ public class S3Service {
             }
         }
 
-        // --- 삭제 대상 키 구성 (private 디렉터리) ---
-        String baseKey = req.getBaseKey();
-        String ext = extOf(baseKey); // ".png" 등 확장자 추출
-        String privateDir = toPrivateDirPrefix(baseKey); // ".../prod/private/.../media/<uuid>/"
-
-        List<String> names = new ArrayList<>();
-        names.add("original." + ext);
-        if (IMG.contains(ext)) {
-            names.addAll(List.of("w320.jpg","w800.jpg","w1600.jpg")); // 혹시 있으면 같이 정리(멱등)
-        }
-
-        var objects = names.stream()
-                .map(n -> ObjectIdentifier.builder().key(privateDir + n).build())
-                .toList();
-
-        if (!objects.isEmpty()) {
-            s3Client.deleteObjects(DeleteObjectsRequest.builder()
-                    .bucket(bucket)
-                    .delete(Delete.builder().objects(objects).build())
-                    .build());
-        }
+        // --- 삭제 ---
+        this.deleteS3MediaSet(req.getBaseKey());
     }
 
-    public void deleteImageSet(String baseKey) {
+    public void deleteS3MediaSet(String baseKey) {
         if (baseKey == null || baseKey.isBlank()) {
             return;
         }

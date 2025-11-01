@@ -37,7 +37,7 @@ public class S3Controller {
             summary = "작성 중 업로드 취소(즉시 삭제)",
             description = "작성 화면에서 올렸다가 뺀 파일을 S3 private 경로에서 즉시 삭제합니다. baseKey는 presign 응답의 값을 그대로 사용하세요."
     )
-    @DeleteMapping("/api/uploads/object")
+    @DeleteMapping("/api/uploads/cancel")
     public ResponseEntity<Void> deleteObject(
             @AuthenticationPrincipal CustomUserDetails principal,
             @RequestBody @Valid UploadDeleteRequestDTO req

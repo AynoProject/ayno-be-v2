@@ -5,7 +5,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class MediaPathGenerator {
     @Value("${media.s3.privatePrefix}") private String privatePrefix;
     @Value("${media.s3.publicPrefix}")  private String publicPrefix;

@@ -23,6 +23,10 @@ public class ArtifactListItemResponseDTO {
     private Long workflowId;
 
     public static ArtifactListItemResponseDTO from(Artifact artifact) {
+        Long workflowId = (artifact.getWorkflow() != null)
+                ? artifact.getWorkflow().getWorkflowId()
+                : null;
+
         return ArtifactListItemResponseDTO.builder()
                 .artifactId(artifact.getArtifactId())
                 .artifactTitle(artifact.getArtifactTitle())
@@ -31,7 +35,7 @@ public class ArtifactListItemResponseDTO {
                 .likeCount(artifact.getLikeCount())
                 .visibility(artifact.getVisibility())
                 .slug(artifact.getSlug())
-                .workflowId(artifact.getWorkflow().getWorkflowId())
+                .workflowId(workflowId)
                 .build();
     }
 }
