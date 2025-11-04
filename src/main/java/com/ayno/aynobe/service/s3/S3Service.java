@@ -52,10 +52,12 @@ public class S3Service {
 
         String uuid = UUID.randomUUID().toString();
 
-        String baseKey = switch (req.getScope()) {
-            case ARTIFACT -> pathGen.makeArtifactBaseKey(req.getArtifactId(), uuid, req.getExt());
-            case SECTION  -> pathGen.makeSectionBaseKey(req.getWorkflowId(), req.getSectionId(), uuid, req.getExt());
-        };
+        String baseKey = pathGen.makeUnboundBaseKey(
+                user.getUserId(),
+                req.getScope().toString().toLowerCase(),
+                uuid,
+                req.getExt()
+        );
 
         String s3Key = pathGen.toPrivateKey(baseKey);
         String contentType = mimeFromExt(req.getExt());
@@ -83,26 +85,16 @@ public class S3Service {
 
     @Transactional(readOnly = true)
     public void deletePrivateObject(User user, UploadDeleteRequestDTO req) {
+        String baseKey = req.getBaseKey();
+
         // --- 권한 검증 ---
-        switch (req.getScope()) {
-            case ARTIFACT -> {
-                if (req.getArtifactId() == null) throw CustomException.badRequest("artifactId 필요");
-                var art = artifactRepository.findById(req.getArtifactId())
-                        .orElseThrow(() -> CustomException.notFound("존재하지 않는 결과물입니다."));
-                if (!art.getUser().getUserId().equals(user.getUserId()))
-                    throw CustomException.forbidden("본인 결과물의 파일만 삭제할 수 있습니다.");
-            }
-            case SECTION -> {
-                if (req.getWorkflowId() == null || req.getSectionId() == null)
-                    throw CustomException.badRequest("workflowId/sectionId 필요");
-                var wf = workflowRepository.findById(req.getWorkflowId())
-                        .orElseThrow(() -> CustomException.notFound("존재하지 않는 워크플로우입니다."));
-                if (!wf.getUser().getUserId().equals(user.getUserId()))
-                    throw CustomException.forbidden("본인 워크플로우의 파일만 삭제할 수 있습니다.");
-                boolean ok = stepSectionRepository
-                        .existsBySectionIdAndWorkflowStep_Workflow_WorkflowId(req.getSectionId(), req.getWorkflowId());
-                if (!ok) throw CustomException.badRequest("섹션 정보가 유효하지 않습니다.");
-            }
+        Long ownerId = parseUserIdFromBaseKey(baseKey);
+        if (ownerId == null) {
+            throw CustomException.badRequest("유효하지 않은 baseKey 형식입니다.");
+        }
+
+        if (!ownerId.equals(user.getUserId())) {
+            throw CustomException.forbidden("파일 삭제 권한이 없습니다.");
         }
 
         // --- 삭제 ---
@@ -137,14 +129,6 @@ public class S3Service {
     }
 
     private void validate(UploadPresignRequestDTO r) {
-        if (r.getScope() == UploadPresignRequestDTO.Scope.ARTIFACT && r.getArtifactId() == null) {
-            throw CustomException.badRequest("artifactId가 필요합니다.");
-        }
-        if (r.getScope() == UploadPresignRequestDTO.Scope.SECTION &&
-                (r.getWorkflowId() == null || r.getSectionId() == null)) {
-            throw CustomException.badRequest("workflowId/sectionId가 필요합니다.");
-        }
-
         String ext = r.getExt().toLowerCase();
         if (!IMG.contains(ext) && !AUD.contains(ext)) {
             throw CustomException.badRequest("지원하지 않는 확장자: " + ext);
@@ -168,13 +152,23 @@ public class S3Service {
         };
     }
 
-    /** baseKey → private 전체키 → 디렉터리 prefix(".../")로 변환 */
+    private Long parseUserIdFromBaseKey(String baseKey) {
+        try {
+            if (baseKey.startsWith("user/")) {
+                String[] parts = baseKey.split("/");
+                return Long.parseLong(parts[1]);
+            }
+        } catch (Exception e) {
+            // 파싱 실패
+        }
+        return null;
+    }
+
     private String toPrivateDirPrefix(String baseKey) {
         String keyWithOriginal = pathGen.toPrivateKey(baseKey);      // ".../private/.../original.ext"
         return keyWithOriginal.replaceAll("/original\\.[^.]+$", "/"); // ".../private/.../"
     }
 
-    /** baseKey의 확장자 (소문자, 점 제외) */
     private static String extOf(String baseKey) {
         int dot = baseKey.lastIndexOf('.');
         return (dot > -1) ? baseKey.substring(dot + 1).toLowerCase() : "";

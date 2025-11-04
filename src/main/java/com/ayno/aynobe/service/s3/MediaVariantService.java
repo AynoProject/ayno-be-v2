@@ -31,7 +31,6 @@ public class MediaVariantService {
         String ext = extOf(baseKey);
         String originalPrivate = path.toPrivateKey(baseKey);
 
-        // 0) 원본이 없으면 발행 불가
         requireExists(originalPrivate);
 
         if (IMAGE.contains(ext)) {
