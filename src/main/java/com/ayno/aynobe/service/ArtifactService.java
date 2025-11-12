@@ -130,19 +130,38 @@ public class ArtifactService {
             throw CustomException.duplicate("중복된 슬러그입니다: " + dto.getSlug());
         }
 
-        // 참조 프리로드(옵션): 존재 확인 후 프록시 부여
-        Workflow workflow = null;
-        if (dto.getWorkflowId() != null) {
-            Long wfId = dto.getWorkflowId();
+        // ★ 2. (수정) S3 삭제 로직을 위해 *기존* 워크플로우와 *새* 워크플로우 ID를 미리 가져옵니다.
+        Workflow oldWorkflow = artifact.getWorkflow(); // 현재 DB에 연결된 워크플로우
+        Long newWorkflowId = dto.getWorkflowId();   // DTO로 전달된 새 워크플로우 ID (null일 수 있음)
+
+        // ★ 3. (신규) '고아'가 될 워크플로우가 있는지 감지 (연결 해제 또는 교체 시)
+        if (oldWorkflow != null && (newWorkflowId == null || !oldWorkflow.getWorkflowId().equals(newWorkflowId))) {
+            // 기존 워크플로우가 있었는데, (1) 새 ID가 null이거나 (2) 새 ID가 기존 ID와 다르면
+            // -> oldWorkflow는 '고아'가 되어 DB에서 삭제될 예정입니다. (by orphanRemoval)
+
+            // ★ 4. (신규) DB 레코드가 삭제되기 전에, S3에 저장된 섹션 파일들을 *먼저* 수동으로 삭제합니다.
+            // (N+1 방지를 위해 baseKey 목록을 한번에 조회)
+            List<String> sectionBaseKeys = stepSectionRepository.findAllBaseKeysByWorkflowId(oldWorkflow.getWorkflowId());
+            for (String baseKey : sectionBaseKeys) {
+                if (baseKey != null && !baseKey.isBlank()) {
+                    s3Service.deleteS3MediaSet(baseKey); // (public/private 모두 삭제하는 헬퍼)
+                }
+            }
+        }
+
+        // ★ 5. (수정) 변수명을 newWorkflow로 명확히 하고, DTO의 ID로 새 프록시를 로드합니다.
+        Workflow newWorkflow = null;
+        if (newWorkflowId != null) {
+            Long wfId = newWorkflowId; // 변수명 일관성
             if (!workflowRepository.existsById(wfId)) {
                 throw CustomException.notFound("존재하지 않는 Workflow ID: " + wfId);
             }
-            workflow = workflowRepository.getReferenceById(wfId);
+            newWorkflow = workflowRepository.getReferenceById(wfId);
         }
 
         // 도메인 위임(더티체킹)
         artifact.applyHeader(dto);
-        artifact.assignWorkflow(workflow);            // nullable 허용
+        artifact.assignWorkflow(newWorkflow);            // nullable 허용
         artifact.replaceMediasFrom(dto.getMedias());  // 전체 교체
 
         try {
