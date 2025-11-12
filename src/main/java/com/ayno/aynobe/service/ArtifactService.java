@@ -10,6 +10,7 @@ import com.ayno.aynobe.entity.Workflow;
 import com.ayno.aynobe.entity.enums.FlowType;
 import com.ayno.aynobe.entity.enums.VisibilityType;
 import com.ayno.aynobe.repository.ArtifactRepository;
+import com.ayno.aynobe.repository.StepSectionRepository;
 import com.ayno.aynobe.repository.WorkflowRepository;
 import com.ayno.aynobe.service.s3.S3Service;
 import lombok.RequiredArgsConstructor;
@@ -21,12 +22,15 @@ import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class ArtifactService {
     private final ArtifactRepository artifactRepository;
     private final WorkflowRepository workflowRepository;
+    private final StepSectionRepository stepSectionRepository;
     private final S3Service s3Service;
 
     public PageResponseDTO<ArtifactListItemResponseDTO> listPublic(
@@ -162,6 +166,18 @@ public class ArtifactService {
         }
 
         // 1. S3 물리적 파일 삭제
+        Workflow workflow = artifact.getWorkflow();
+        if (workflow != null) {
+            Long workflowId = workflow.getWorkflowId();
+
+            // 워크플로우 ID로 모든 섹션의 baseKey를 한번에 조회 (N+1 방지)
+            List<String> sectionBaseKeys = stepSectionRepository.findAllBaseKeysByWorkflowId(workflowId);
+
+            for (String baseKey : sectionBaseKeys) {
+                s3Service.deleteS3MediaSet(baseKey);
+            }
+        }
+
         for (ArtifactMedia media : artifact.getMedias()) {
             s3Service.deleteS3MediaSet(media.getBaseKey());
         }

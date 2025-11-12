@@ -146,12 +146,10 @@ public class MediaVariantService {
 
     /* =========== 문자열 유틸 =========== */
 
-    /** .../original.ext → .../<variantFileName> */
     private static String replaceTail(String originalKey, String variantFileName) {
         return originalKey.replaceAll("/original\\.[^.]+$", "/" + variantFileName);
     }
 
-    /** baseKey의 확장자 (점 제외, 소문자) */
     private static String extOf(String baseKey) {
         int dot = baseKey.lastIndexOf('.');
         return (dot > -1) ? baseKey.substring(dot + 1).toLowerCase() : "";

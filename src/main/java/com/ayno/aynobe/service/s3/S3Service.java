@@ -6,9 +6,6 @@ import com.ayno.aynobe.dto.asset.UploadDeleteRequestDTO;
 import com.ayno.aynobe.dto.asset.UploadPresignRequestDTO;
 import com.ayno.aynobe.dto.asset.UploadPresignResponseDTO;
 import com.ayno.aynobe.entity.User;
-import com.ayno.aynobe.repository.ArtifactRepository;
-import com.ayno.aynobe.repository.StepSectionRepository;
-import com.ayno.aynobe.repository.WorkflowRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -39,10 +36,6 @@ public class S3Service {
     private final S3Client s3Client;
     private final S3Presigner presigner;
     private final MediaPathGenerator pathGen;
-
-    private final ArtifactRepository artifactRepository;
-    private final WorkflowRepository workflowRepository;
-    private final StepSectionRepository stepSectionRepository;
 
     @Value("${media.s3.bucket}")
     private String bucket;
@@ -87,7 +80,6 @@ public class S3Service {
     public void deletePrivateObject(User user, UploadDeleteRequestDTO req) {
         String baseKey = req.getBaseKey();
 
-        // --- 권한 검증 ---
         Long ownerId = parseUserIdFromBaseKey(baseKey);
         if (ownerId == null) {
             throw CustomException.badRequest("유효하지 않은 baseKey 형식입니다.");
@@ -97,7 +89,6 @@ public class S3Service {
             throw CustomException.forbidden("파일 삭제 권한이 없습니다.");
         }
 
-        // --- 삭제 ---
         this.deleteS3MediaSet(req.getBaseKey());
     }
 
@@ -106,27 +97,36 @@ public class S3Service {
             return;
         }
 
-        String ext = extOf(baseKey); // ".png" 등 확장자 추출 (기존 private 메소드 활용)
-        String privateDir = toPrivateDirPrefix(baseKey); // ".../prod/private/.../media/<uuid>/" (기존 private 메소드 활용)
+        String ext = extOf(baseKey);
+        String privateDir = toPrivateDirPrefix(baseKey);
+        String publicDir = toPublicDirPrefix(baseKey);
 
+        // 1. 파생 이미지 이름 목록 생성
         List<String> names = new ArrayList<>();
         names.add("original." + ext);
         if (IMG.contains(ext)) {
             names.addAll(List.of("w320.jpg", "w800.jpg", "w1600.jpg"));
         }
-        // TODO: 만약 AUDIO 파생 파일이 있다면 여기에 추가 (예: "preview.mp3")
+        // TODO: 오디오 파생 파일이 있다면 여기에 추가
 
-        var objects = names.stream()
-                .map(n -> ObjectIdentifier.builder().key(privateDir + n).build())
-                .toList();
+        // 2. private + public 경로의 모든 S3 키 수집
+        List<ObjectIdentifier> keysToDelete = new ArrayList<>();
+        for (String name : names) {
+            keysToDelete.add(ObjectIdentifier.builder().key(privateDir + name).build());
+            keysToDelete.add(ObjectIdentifier.builder().key(publicDir + name).build());
+        }
 
-        if (!objects.isEmpty()) {
+        try {
             s3Client.deleteObjects(DeleteObjectsRequest.builder()
                     .bucket(bucket)
-                    .delete(Delete.builder().objects(objects).build())
+                    .delete(Delete.builder().objects(keysToDelete).build())
                     .build());
+        } catch (Exception e) {
+
         }
     }
+
+    /* =========== 유틸 로직 =========== */
 
     private void validate(UploadPresignRequestDTO r) {
         String ext = r.getExt().toLowerCase();
@@ -167,6 +167,11 @@ public class S3Service {
     private String toPrivateDirPrefix(String baseKey) {
         String keyWithOriginal = pathGen.toPrivateKey(baseKey);      // ".../private/.../original.ext"
         return keyWithOriginal.replaceAll("/original\\.[^.]+$", "/"); // ".../private/.../"
+    }
+
+    private String toPublicDirPrefix(String baseKey) {
+        String keyWithOriginal = pathGen.toPublicKey(baseKey);
+        return keyWithOriginal.replaceAll("/original\\.[^.]+$", "/");
     }
 
     private static String extOf(String baseKey) {
