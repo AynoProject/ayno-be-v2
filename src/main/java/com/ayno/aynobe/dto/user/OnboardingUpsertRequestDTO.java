@@ -1,5 +1,6 @@
 package com.ayno.aynobe.dto.user;
 
+import com.ayno.aynobe.entity.enums.AgeBand;
 import com.ayno.aynobe.entity.enums.GenderType;
 import com.ayno.aynobe.entity.enums.UsageDepthType;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -17,6 +18,9 @@ import java.util.List;
 public class OnboardingUpsertRequestDTO {
     @Schema(description="성별(null이면 변경 안 함)", example="MALE")
     private GenderType gender;
+
+    @Schema(description="연령대(null이면 변경 안 함)", example="TEEN")
+    private AgeBand ageBand;
 
     @Schema(description="AI 사용깊이(null이면 변경 안 함)", example="INTERMEDIATE")
     private UsageDepthType usageDepth;

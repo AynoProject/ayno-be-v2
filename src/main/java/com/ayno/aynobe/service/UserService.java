@@ -40,6 +40,10 @@ public class UserService {
             user.changeGender(req.getGender());
         }
 
+        if (req.getAgeBand() != null) {
+            user.changeAgeBand(req.getAgeBand());
+        }
+
         // aiUsageDepth
         if (req.getUsageDepth() != null) {
             user.changeAiUsageDepth(req.getUsageDepth());
@@ -72,7 +76,7 @@ public class UserService {
             Set<Integer> idsToAdd = new HashSet<>(desiredIds);
             idsToAdd.removeAll(currentIds);         // 원하는 - 현재
 
-            // 추가할 것만 DB 조회 (맵 불필요)
+            // 추가할 것만 DB 조회
             List<Interest> interestsToAdd = Collections.emptyList();
             if (!idsToAdd.isEmpty()) {
                 interestsToAdd = interestRepository.findAllById(idsToAdd);

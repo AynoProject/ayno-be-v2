@@ -68,6 +68,8 @@ public class User extends BaseTimeEntity {
 
     public void changeGender(GenderType gender) { this.gender = gender; }
 
+    public void changeAgeBand(AgeBand ageBand) { this.ageBand = ageBand; }
+
     public void changeAiUsageDepth(UsageDepthType depth) { this.aiUsageDepth = depth; }
 
     public void changeJobRole(JobRole jobRole) { this.jobRole = jobRole; }
