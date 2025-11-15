@@ -1,13 +1,14 @@
 package com.ayno.aynobe.service;
 
 import com.ayno.aynobe.config.exception.CustomException;
-import com.ayno.aynobe.dto.common.PageResponseDTO;
 import com.ayno.aynobe.dto.workflow.*;
 import com.ayno.aynobe.entity.*;
 import com.ayno.aynobe.entity.enums.TargetType;
 import com.ayno.aynobe.repository.ReactionRepository;
+import com.ayno.aynobe.repository.StepSectionRepository;
 import com.ayno.aynobe.repository.ToolRepository;
 import com.ayno.aynobe.repository.WorkflowRepository;
+import com.ayno.aynobe.service.s3.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +22,9 @@ public class WorkflowService {
 
     private final WorkflowRepository workflowRepository;
     private final ReactionRepository reactionRepository;
+    private final StepSectionRepository stepSectionRepository;
     private final ToolRepository toolRepository;
+    private final S3Service s3Service;
 
 
     @Transactional(readOnly = true)
@@ -171,6 +174,15 @@ public class WorkflowService {
         boolean isOwner = workflow.getUser().getUserId().equals(actor.getUserId());
         if (!isOwner) {
             throw CustomException.forbidden("본인이 작성한 워크플로우만 삭제할 수 있습니다.");
+        }
+
+        // ★ 3. (신규) S3 파일 선(先)삭제
+        // (N+1 방지를 위해 baseKey 목록을 한번에 조회)
+        List<String> sectionBaseKeys = stepSectionRepository.findAllBaseKeysByWorkflowId(workflowId);
+        for (String baseKey : sectionBaseKeys) {
+            if (baseKey != null && !baseKey.isBlank()) {
+                s3Service.deleteS3MediaSet(baseKey);
+            }
         }
 
         // 3) Reaction 정리 (타깃: WORKFLOW)
