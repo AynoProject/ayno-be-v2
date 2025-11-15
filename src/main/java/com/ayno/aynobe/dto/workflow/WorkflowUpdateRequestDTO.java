@@ -88,7 +88,7 @@ public class WorkflowUpdateRequestDTO {
         @Schema(description = "섹션 본문/프롬프트 내용", example = "You are a helpful assistant specialized in design.")
         private String stepContent;
 
-        @NotBlank @Size(max = 512)
-        private String mediaUrl;
+        @Size(max = 512)
+        private String baseKey;
     }
 }

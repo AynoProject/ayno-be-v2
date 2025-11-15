@@ -44,8 +44,8 @@ public class StepSection extends BaseTimeEntity {
     @Column(name = "stepContent", nullable = false, columnDefinition = "TEXT")
     private String stepContent;
 
-    @Column(name = "mediaUrl", nullable = false, length = 512)
-    private String mediaUrl;
+    @Column(name = "baseKey", length = 512)
+    private String baseKey;
 
     public WorkflowDetailResponseDTO.SectionDTO toDetailDTO() {
         return WorkflowDetailResponseDTO.SectionDTO.builder()
@@ -55,7 +55,7 @@ public class StepSection extends BaseTimeEntity {
                 .stepType(this.sectionType.name())
                 .promptRole(this.promptRole.name())
                 .stepContent(this.stepContent)
-                .mediaUrl(this.mediaUrl)
+                .mediaUrl(this.baseKey)
                 .build();
     }
 }

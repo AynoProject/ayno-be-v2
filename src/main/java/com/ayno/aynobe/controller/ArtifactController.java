@@ -2,10 +2,12 @@ package com.ayno.aynobe.controller;
 
 import com.ayno.aynobe.config.security.CustomUserDetails;
 import com.ayno.aynobe.dto.artifact.*;
+import com.ayno.aynobe.dto.asset.ArtifactPublishResponseDTO;
 import com.ayno.aynobe.dto.common.PageResponseDTO;
 import com.ayno.aynobe.dto.common.Response;
 import com.ayno.aynobe.entity.enums.FlowType;
 import com.ayno.aynobe.service.ArtifactService;
+import com.ayno.aynobe.service.s3.PublishService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -14,13 +16,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-@Tag(name = "Artifact", description = "결과물 조회 API")
+@Tag(name = "Artifact", description = "결과물 관련 API")
 @RestController
 @RequestMapping("/api/artifacts")
 @RequiredArgsConstructor
 public class ArtifactController {
 
     private final ArtifactService artifactService;
+    private final PublishService publishService;
 
     @Operation(
             summary = "공개 결과물 목록 조회",
@@ -71,7 +74,9 @@ public class ArtifactController {
         return ResponseEntity.ok(Response.success(result));
     }
 
-    @Operation(summary = "결과물 삭제", description = "본인이 등록한 결과물을 삭제합니다.")
+    @Operation(
+            summary = "결과물 삭제",
+            description = "본인이 등록한 결과물을 삭제합니다.")
     @DeleteMapping("/{artifactId}")
     public ResponseEntity<Response<ArtifactDeleteResponseDTO>> delete(
             @AuthenticationPrincipal CustomUserDetails principal,
@@ -80,4 +85,29 @@ public class ArtifactController {
         var result = artifactService.delete(principal.getUser(), artifactId);
         return ResponseEntity.ok(Response.success(result));
     }
+
+    @Operation(
+            summary = "결과물 공개",
+            description = "본인이 등록한 결과물을 public으로 발행합니다.")
+    @PutMapping("/{artifactId}/publish")
+    public ResponseEntity<ArtifactPublishResponseDTO> publish(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @PathVariable long artifactId
+    ) {
+        var res = publishService.publishArtifact(principal.getUser(), artifactId);
+        return ResponseEntity.ok(res);
+    }
+
+    @Operation(
+            summary = "결과물 미공개",
+            description = "본인이 등록한 결과물을 unpublic으로 발행합니다.")
+    @PutMapping("/{artifactId}/unpublish")
+    public ResponseEntity<ArtifactPublishResponseDTO> unpublish(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @PathVariable long artifactId
+    ) {
+        var res = publishService.unpublishArtifact(principal.getUser(), artifactId);
+        return ResponseEntity.ok(res);
+    }
+
 }

@@ -43,6 +43,9 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0")
+
+    implementation(platform("software.amazon.awssdk:bom:2.25.40"))
+    implementation("software.amazon.awssdk:s3")
 }
 
 tasks.withType<Test> {

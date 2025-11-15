@@ -35,7 +35,6 @@ public class ArtifactDetailResponseDTO {
         return ArtifactDetailResponseDTO.builder()
                 .artifactId(a.getArtifactId())
                 .artifactTitle(a.getArtifactTitle())
-                .thumbnailUrl(a.getThumbnailUrl())
                 .aiUsagePercent(a.getAiUsagePercent())
                 .viewCount(a.getViewCount())
                 .likeCount(a.getLikeCount())

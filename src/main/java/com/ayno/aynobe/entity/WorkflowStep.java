@@ -2,6 +2,8 @@ package com.ayno.aynobe.entity;
 
 import com.ayno.aynobe.dto.workflow.WorkflowCreateRequestDTO;
 import com.ayno.aynobe.dto.workflow.WorkflowDetailResponseDTO;
+import com.ayno.aynobe.dto.workflow.WorkflowUpdateRequestDTO;
+import com.ayno.aynobe.entity.enums.SectionType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.Fetch;
@@ -73,17 +75,20 @@ public class WorkflowStep extends BaseTimeEntity {
                 .sectionType(sectionDTO.getSectionType())
                 .promptRole(sectionDTO.getPromptRole())
                 .stepContent(sectionDTO.getStepContent())
-                .mediaUrl(sectionDTO.getMediaUrl())
                 .build();
+
+        if (sectionDTO.getSectionType() == SectionType.MEDIA) {
+            section.setBaseKey(sectionDTO.getBaseKey());   // 필수(위 DTO 검증으로 보장)
+        } else {
+            section.setBaseKey(null);                  // MEDIA 아니면 비움
+        }
 
         this.stepSections.add(section);
         return section;
     }
 
     /** sections diff 동기화 */
-    public void syncSections(
-            List<com.ayno.aynobe.dto.workflow.WorkflowUpdateRequestDTO.SectionDTO> newSections
-    ) {
+    public void syncSections(List<WorkflowUpdateRequestDTO.SectionDTO> newSections) {
         Map<Long, StepSection> existed = this.stepSections.stream()
                 .collect(java.util.stream.Collectors.toMap(StepSection::getSectionId, s -> s));
 
@@ -99,7 +104,13 @@ public class WorkflowStep extends BaseTimeEntity {
                 sec.setSectionType(d.getSectionType());
                 sec.setPromptRole(d.getPromptRole());
                 sec.setStepContent(d.getStepContent());
-                sec.setMediaUrl(d.getMediaUrl());
+
+                // MEDIA일 때만 baseKey 세팅
+                if (d.getSectionType() == SectionType.MEDIA) {
+                    sec.setBaseKey(d.getBaseKey());
+                } else {
+                    sec.setBaseKey(null);
+                }
             } else {
                 // 추가
                 sec = StepSection.builder()
@@ -109,15 +120,20 @@ public class WorkflowStep extends BaseTimeEntity {
                         .sectionType(d.getSectionType())
                         .promptRole(d.getPromptRole())
                         .stepContent(d.getStepContent())
-                        .mediaUrl(d.getMediaUrl())
                         .build();
+
+                if (d.getSectionType() == SectionType.MEDIA) {
+                    sec.setBaseKey(d.getBaseKey());
+                } else {
+                    sec.setBaseKey(null);
+                }
             }
             next.add(sec);
         }
 
-        // 삭제
+        // 삭제 (orphanRemoval=true 가정)
         for (StepSection removed : existed.values()) {
-            removed.setWorkflowStep(null);         // orphanRemoval=true → DELETE
+            removed.setWorkflowStep(null); // 고아 제거 유도
         }
 
         // 교체(순서 반영)

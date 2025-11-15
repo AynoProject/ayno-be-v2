@@ -66,7 +66,7 @@ public class WorkflowController {
 
 
     @Operation(
-            summary = "워크플로우 삭제"
+            summary = "워크플로우 삭제(고아 객체 롤백용)"
     )
     @DeleteMapping("/{workflowId}")
     public ResponseEntity<Response<WorkflowDeleteResponseDTO>> delete(

@@ -14,7 +14,6 @@ import lombok.*;
 public class ArtifactListItemResponseDTO {
     private Long artifactId;
     private String artifactTitle;
-    private String thumbnailUrl;
     private Integer aiUsagePercent;
     private Long viewCount;
     private Long likeCount;
@@ -24,16 +23,19 @@ public class ArtifactListItemResponseDTO {
     private Long workflowId;
 
     public static ArtifactListItemResponseDTO from(Artifact artifact) {
+        Long workflowId = (artifact.getWorkflow() != null)
+                ? artifact.getWorkflow().getWorkflowId()
+                : null;
+
         return ArtifactListItemResponseDTO.builder()
                 .artifactId(artifact.getArtifactId())
                 .artifactTitle(artifact.getArtifactTitle())
-                .thumbnailUrl(artifact.getThumbnailUrl())
                 .aiUsagePercent(artifact.getAiUsagePercent())
                 .viewCount(artifact.getViewCount())
                 .likeCount(artifact.getLikeCount())
                 .visibility(artifact.getVisibility())
                 .slug(artifact.getSlug())
-                .workflowId(artifact.getWorkflow().getWorkflowId())
+                .workflowId(workflowId)
                 .build();
     }
 }
