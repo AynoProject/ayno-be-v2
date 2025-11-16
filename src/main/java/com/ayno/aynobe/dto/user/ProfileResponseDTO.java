@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 @Builder
 public class ProfileResponseDTO {
     private String username;
+    private String profileImageUrl;
     private GenderType gender;
     private AgeBand ageBand;
     private UsageDepthType aiUsageDepth;
@@ -28,6 +29,7 @@ public class ProfileResponseDTO {
     public static ProfileResponseDTO from(User u) {
         return ProfileResponseDTO.builder()
                 .username(u.getUsername())
+                .profileImageUrl(u.getProfileImageUrl())
                 .gender(u.getGender())
                 .ageBand(u.getAgeBand())
                 .aiUsageDepth(u.getAiUsageDepth())
