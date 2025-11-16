@@ -3,6 +3,7 @@ package com.ayno.aynobe.service;
 import com.ayno.aynobe.config.exception.CustomException;
 import com.ayno.aynobe.dto.user.OnboardingResponseDTO;
 import com.ayno.aynobe.dto.user.OnboardingUpsertRequestDTO;
+import com.ayno.aynobe.dto.user.ProfileResponseDTO;
 import com.ayno.aynobe.entity.Interest;
 import com.ayno.aynobe.entity.JobRole;
 import com.ayno.aynobe.entity.User;
@@ -91,4 +92,11 @@ public class UserService {
 
         return OnboardingResponseDTO.from(user);
     }
+
+    public ProfileResponseDTO getMyProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> CustomException.notFound("사용자를 찾을 수 없습니다."));
+        return ProfileResponseDTO.from(user);
+    }
+
 }
