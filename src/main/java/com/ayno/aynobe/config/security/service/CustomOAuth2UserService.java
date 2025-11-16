@@ -48,6 +48,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                                     User.builder()
                                             .username(username)
                                             .passwordHash(null) // 소셜-only
+                                            .profileImageUrl(attributes.getPicture())
                                             .gender(GenderType.NONE)
                                             .aiUsageDepth(UsageDepthType.NONE)
                                             .ageBand(AgeBand.NONE)

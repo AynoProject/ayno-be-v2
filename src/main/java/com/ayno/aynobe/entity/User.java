@@ -30,6 +30,9 @@ public class User extends BaseTimeEntity {
     @Column(length = 512)
     private String passwordHash;
 
+    @Column(length = 512)
+    private String profileImageUrl;
+
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<LinkedAccount> linkedAccounts = new ArrayList<>();
