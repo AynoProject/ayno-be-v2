@@ -166,17 +166,17 @@ public class WorkflowService {
 
     @Transactional
     public WorkflowDeleteResponseDTO delete(User actor, Long workflowId) {
-        // 1) 로드(+작성자)
+        // 로드(+작성자)
         Workflow workflow = workflowRepository.findByWorkflowId(workflowId)
                 .orElseThrow(() -> CustomException.notFound("존재하지 않는 워크플로우입니다."));
 
-        // 2) 권한: 작성자만 허용
+        // 권한: 작성자만 허용
         boolean isOwner = workflow.getUser().getUserId().equals(actor.getUserId());
         if (!isOwner) {
             throw CustomException.forbidden("본인이 작성한 워크플로우만 삭제할 수 있습니다.");
         }
 
-        // ★ 3. (신규) S3 파일 선(先)삭제
+        // S3 파일 선(先)삭제
         // (N+1 방지를 위해 baseKey 목록을 한번에 조회)
         List<String> sectionBaseKeys = stepSectionRepository.findAllBaseKeysByWorkflowId(workflowId);
         for (String baseKey : sectionBaseKeys) {
@@ -185,10 +185,7 @@ public class WorkflowService {
             }
         }
 
-        // 3) Reaction 정리 (타깃: WORKFLOW)
-        reactionRepository.deleteByTargetTypeAndTargetId(TargetType.WORKFLOW, workflowId);
-
-        // 4) 루트 삭제 (cascade로 step/section 함께 제거)
+        // 루트 삭제 (cascade로 step/section 함께 제거)
         workflowRepository.delete(workflow);
 
         return WorkflowDeleteResponseDTO.builder()

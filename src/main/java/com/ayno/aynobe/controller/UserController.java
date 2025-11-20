@@ -79,4 +79,16 @@ public class UserController {
         return ResponseEntity.ok()
                 .body(Response.success(userService.getMyArtifact(principal.getUser().getUserId(), visibility ,pageable)));
     }
+
+    @Operation(summary = "내가 좋아요 누른 작품 목록 조회")
+    @GetMapping("/me/likes")
+    public ResponseEntity<Response<PageResponseDTO<MyArtifactListItemResponseDTO>>> getLikedArtifacts(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @ParameterObject Pageable pageable
+    ) {
+        return ResponseEntity.ok()
+                .body(Response.success(userService.getLikedArtifacts(principal.getUser().getUserId(), pageable)));
+    }
+
+
 }

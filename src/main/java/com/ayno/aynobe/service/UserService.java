@@ -101,23 +101,21 @@ public class UserService {
         return OnboardingResponseDTO.from(user);
     }
 
+    @Transactional
     public ProfileResponseDTO getMyProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> CustomException.notFound("사용자를 찾을 수 없습니다."));
         return ProfileResponseDTO.from(user);
     }
 
+    @Transactional
     public PageResponseDTO<MyArtifactListItemResponseDTO> getMyArtifact(Long userId, VisibilityType visibility, Pageable pageable) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> CustomException.notFound("사용자를 찾을 수 없습니다."));
-
         Page<Artifact> artifactPage = artifactRepository.findAllMyArtifacts(
                 userId,
                 visibility,
                 pageable
         );
 
-        // 3. Entity -> DTO 변환
         List<MyArtifactListItemResponseDTO> content = artifactPage.getContent().stream()
                 .map(artifact -> MyArtifactListItemResponseDTO.builder()
                         .artifactId(artifact.getArtifactId())
@@ -130,7 +128,36 @@ public class UserService {
                         .build())
                 .toList();
 
-        // 4. PageResponseDTO 빌더 반환
+        return PageResponseDTO.<MyArtifactListItemResponseDTO>builder()
+                .content(content)
+                .page(artifactPage.getNumber())
+                .size(artifactPage.getSize())
+                .totalElements(artifactPage.getTotalElements())
+                .totalPages(artifactPage.getTotalPages())
+                .hasNext(artifactPage.hasNext())
+                .build();
+    }
+
+    @Transactional
+    public PageResponseDTO<MyArtifactListItemResponseDTO> getLikedArtifacts(Long userId, Pageable pageable) {
+        Page<Artifact> artifactPage = artifactRepository.findLikedArtifacts(
+                userId,
+                pageable
+        );
+
+        List<MyArtifactListItemResponseDTO> content = artifactPage.getContent().stream()
+                .map(artifact -> MyArtifactListItemResponseDTO.builder()
+                        .artifactId(artifact.getArtifactId())
+                        .artifactTitle(artifact.getArtifactTitle())
+                        .aiUsagePercent(artifact.getAiUsagePercent())
+                        .viewCount(artifact.getViewCount())
+                        .likeCount(artifact.getLikeCount())
+                        .visibility(artifact.getVisibility())
+                        .slug(artifact.getSlug())
+                        .build())
+                .toList();
+
+        // 3. 반환
         return PageResponseDTO.<MyArtifactListItemResponseDTO>builder()
                 .content(content)
                 .page(artifactPage.getNumber())

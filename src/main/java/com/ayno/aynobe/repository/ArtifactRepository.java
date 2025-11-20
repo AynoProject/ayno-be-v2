@@ -26,6 +26,18 @@ public interface ArtifactRepository extends JpaRepository<Artifact, Long> {
             Pageable pageable
     );
 
+    @Query("SELECT a FROM Artifact a " +
+            "JOIN Reaction r ON a.artifactId = r.targetId " +
+            "WHERE r.user.userId = :userId " +
+            "AND r.targetType = 'ARTIFACT' " +
+            "AND r.reactionType = 'LIKE' " +
+            "AND a.visibility = 'PUBLIC' " +
+            "ORDER BY r.createdAt DESC")
+    Page<Artifact> findLikedArtifacts(
+            @Param("userId") Long userId,
+            Pageable pageable
+    );
+
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("update Artifact a set a.likeCount = a.likeCount + :delta where a.artifactId = :artifactId")
     int updateLikeCount(
