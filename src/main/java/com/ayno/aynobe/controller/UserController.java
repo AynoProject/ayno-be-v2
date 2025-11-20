@@ -1,14 +1,19 @@
 package com.ayno.aynobe.controller;
 
 import com.ayno.aynobe.config.security.CustomUserDetails;
+import com.ayno.aynobe.dto.common.PageResponseDTO;
 import com.ayno.aynobe.dto.common.Response;
+import com.ayno.aynobe.dto.user.MyArtifactListItemResponseDTO;
 import com.ayno.aynobe.dto.user.OnboardingResponseDTO;
 import com.ayno.aynobe.dto.user.OnboardingUpsertRequestDTO;
 import com.ayno.aynobe.dto.user.ProfileResponseDTO;
+import com.ayno.aynobe.entity.enums.VisibilityType;
 import com.ayno.aynobe.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -60,5 +65,18 @@ public class UserController {
     ){
         return ResponseEntity.ok()
                 .body(Response.success(userService.getMyProfile(principal.getUser().getUserId())));
+    }
+
+    @Operation(
+            summary = "내 결과물 목록 가져오기"
+    )
+    @GetMapping("/me/artifact")
+    public ResponseEntity<Response<PageResponseDTO<MyArtifactListItemResponseDTO>>> getMyArtifact(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestParam(required = false) VisibilityType visibility,
+            @ParameterObject Pageable pageable
+    ){
+        return ResponseEntity.ok()
+                .body(Response.success(userService.getMyArtifact(principal.getUser().getUserId(), visibility ,pageable)));
     }
 }
