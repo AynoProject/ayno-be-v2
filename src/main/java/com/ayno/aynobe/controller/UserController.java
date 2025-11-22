@@ -3,10 +3,7 @@ package com.ayno.aynobe.controller;
 import com.ayno.aynobe.config.security.CustomUserDetails;
 import com.ayno.aynobe.dto.common.PageResponseDTO;
 import com.ayno.aynobe.dto.common.Response;
-import com.ayno.aynobe.dto.user.MyArtifactListItemResponseDTO;
-import com.ayno.aynobe.dto.user.OnboardingResponseDTO;
-import com.ayno.aynobe.dto.user.OnboardingUpsertRequestDTO;
-import com.ayno.aynobe.dto.user.ProfileResponseDTO;
+import com.ayno.aynobe.dto.user.*;
 import com.ayno.aynobe.entity.enums.VisibilityType;
 import com.ayno.aynobe.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -65,6 +62,18 @@ public class UserController {
     ){
         return ResponseEntity.ok()
                 .body(Response.success(userService.getMyProfile(principal.getUser().getUserId())));
+    }
+
+    @Operation(summary = "내 프로필 수정", description = "닉네임, 직무, 관심사, 기타 정보를 수정합니다. (이미지 제외)")
+    @PutMapping("/me/profile")
+    public ResponseEntity<Response<ProfileResponseDTO>> updateProfile(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestBody ProfileUpdateRequestDTO request
+    ) {
+        return ResponseEntity.ok()
+                .body(Response.success(
+                        userService.updateProfile(principal.getUser().getUserId(), request)
+                ));
     }
 
     @Operation(

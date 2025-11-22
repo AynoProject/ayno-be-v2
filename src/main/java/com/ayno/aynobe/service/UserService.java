@@ -2,10 +2,7 @@ package com.ayno.aynobe.service;
 
 import com.ayno.aynobe.config.exception.CustomException;
 import com.ayno.aynobe.dto.common.PageResponseDTO;
-import com.ayno.aynobe.dto.user.MyArtifactListItemResponseDTO;
-import com.ayno.aynobe.dto.user.OnboardingResponseDTO;
-import com.ayno.aynobe.dto.user.OnboardingUpsertRequestDTO;
-import com.ayno.aynobe.dto.user.ProfileResponseDTO;
+import com.ayno.aynobe.dto.user.*;
 import com.ayno.aynobe.entity.Artifact;
 import com.ayno.aynobe.entity.Interest;
 import com.ayno.aynobe.entity.JobRole;
@@ -22,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -44,19 +42,9 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> CustomException.notFound("사용자를 찾을 수 없습니다."));
 
-        // gender
-        if (req.getGender() != null) {
-            user.changeGender(req.getGender());
-        }
-
-        if (req.getAgeBand() != null) {
-            user.changeAgeBand(req.getAgeBand());
-        }
-
-        // aiUsageDepth
-        if (req.getUsageDepth() != null) {
-            user.changeAiUsageDepth(req.getUsageDepth());
-        }
+        if (req.getGender() != null) {user.changeGender(req.getGender());}
+        if (req.getAgeBand() != null) {user.changeAgeBand(req.getAgeBand());}
+        if (req.getUsageDepth() != null) {user.changeAiUsageDepth(req.getUsageDepth());}
 
         // jobRole
         if (req.getJobRoleId() != null) {
@@ -105,6 +93,67 @@ public class UserService {
     public ProfileResponseDTO getMyProfile(Long userId) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> CustomException.notFound("사용자를 찾을 수 없습니다."));
+        return ProfileResponseDTO.from(user);
+    }
+
+    @Transactional
+    public ProfileResponseDTO updateProfile(Long userId, ProfileUpdateRequestDTO request) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> CustomException.notFound("사용자를 찾을 수 없습니다."));
+
+        if (request.getNickname() != null && !request.getNickname().equals(user.getNickname())) {
+            if (userRepository.existsByNickname(request.getNickname())) {
+                throw CustomException.conflict("이미 사용 중인 닉네임입니다.");
+            }
+            user.changeNickname(request.getNickname());
+        }
+
+        if (request.getGender() != null) user.changeGender(request.getGender());
+        if (request.getAgeBand() != null) user.changeAgeBand(request.getAgeBand());
+        if (request.getAiUsageDepth() != null) user.changeAiUsageDepth(request.getAiUsageDepth());
+
+        if (request.getJobRoleId() != null) {
+            JobRole jobRole = jobRoleRepository.findById(request.getJobRoleId())
+                    .orElseThrow(() -> CustomException.notFound("존재하지 않는 직무입니다."));
+            user.changeJobRole(jobRole);
+        }
+
+        // 3. 관심사 변경 (팀원님의 Diffing 로직 채용)
+        if (request.getInterestIds() != null) {
+            if (request.getInterestIds().size() > 3) {
+                throw CustomException.badRequest("관심분야는 최대 3개까지 선택할 수 있습니다.");
+            }
+
+            // 3-1. 현재 가지고 있는 ID 목록 추출
+            Set<Integer> currentIds = user.getUserInterests().stream()
+                    .map(ui -> ui.getInterest().getInterestId())
+                    .collect(Collectors.toSet());
+
+            // 3-2. 요청받은 ID 목록
+            Set<Integer> desiredIds = new HashSet<>(request.getInterestIds());
+
+            // 3-3. 삭제할 ID 계산 (현재 - 요청)
+            Set<Integer> idsToRemove = new HashSet<>(currentIds);
+            idsToRemove.removeAll(desiredIds);
+
+            // 3-4. 추가할 ID 계산 (요청 - 현재)
+            Set<Integer> idsToAdd = new HashSet<>(desiredIds);
+            idsToAdd.removeAll(currentIds);
+
+            // 3-5. 추가할 엔티티 조회 (필요한 것만 DB 조회)
+            List<Interest> interestsToAdd = Collections.emptyList();
+            if (!idsToAdd.isEmpty()) {
+                interestsToAdd = interestRepository.findAllById(idsToAdd);
+                // 요청한 ID가 DB에 실제 존재하는지 검증
+                if (interestsToAdd.size() != idsToAdd.size()) {
+                    throw CustomException.badRequest("유효하지 않은 관심요소 ID가 포함되어 있습니다.");
+                }
+            }
+
+            // 3-6. 엔티티에게 업데이트 위임 (도메인 메서드 호출)
+            user.updateInterests(idsToRemove, interestsToAdd);
+        }
+
         return ProfileResponseDTO.from(user);
     }
 

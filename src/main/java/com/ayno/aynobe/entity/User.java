@@ -72,12 +72,10 @@ public class User extends BaseTimeEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reaction> reactions = new ArrayList<>();
 
+    public void changeNickname(String nickname) {this.nickname = nickname;}
     public void changeGender(GenderType gender) { this.gender = gender; }
-
     public void changeAgeBand(AgeBand ageBand) { this.ageBand = ageBand; }
-
     public void changeAiUsageDepth(UsageDepthType depth) { this.aiUsageDepth = depth; }
-
     public void changeJobRole(JobRole jobRole) { this.jobRole = jobRole; }
 
     public void updateInterests(Set<Integer> interestIdsToRemove,
