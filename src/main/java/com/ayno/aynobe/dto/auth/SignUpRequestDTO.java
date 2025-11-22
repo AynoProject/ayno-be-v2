@@ -11,7 +11,7 @@ import lombok.Setter;
 public class SignUpRequestDTO {
     @Schema(description = "아이디", example = "testuser", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "아이디는 필수 입력 값입니다.")
-    private String userId;
+    private String username;
 
     @Schema(description = "비밀번호", example = "testpass", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "비밀번호는 필수 입력 값입니다.")

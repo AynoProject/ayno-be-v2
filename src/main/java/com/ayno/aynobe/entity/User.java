@@ -27,6 +27,9 @@ public class User extends BaseTimeEntity {
     @Column(length = 256)
     private String username;
 
+    @Column(length = 256)
+    private String nickname;
+
     @Column(length = 512)
     private String passwordHash;
 

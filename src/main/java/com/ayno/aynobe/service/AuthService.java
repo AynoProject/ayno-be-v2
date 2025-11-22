@@ -54,7 +54,8 @@ public class AuthService {
     @Transactional
     public SignUpResponseDTO signUp(SignUpRequestDTO request) {
         User user = User.builder()
-                .username(request.getUserId())
+                .username(request.getUsername())
+                .nickname(request.getUsername())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .gender(GenderType.NONE)
                 .aiUsageDepth(UsageDepthType.NONE)

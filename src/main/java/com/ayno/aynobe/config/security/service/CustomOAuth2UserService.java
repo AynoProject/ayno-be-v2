@@ -47,6 +47,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                             .orElseGet(() -> userRepository.save(
                                     User.builder()
                                             .username(username)
+                                            .nickname(attributes.getEmail())
                                             .passwordHash(null) // 소셜-only
                                             .profileImageUrl(attributes.getPicture())
                                             .gender(GenderType.NONE)
