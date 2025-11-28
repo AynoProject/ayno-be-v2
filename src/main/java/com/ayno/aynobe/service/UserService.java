@@ -1,6 +1,7 @@
 package com.ayno.aynobe.service;
 
 import com.ayno.aynobe.config.exception.CustomException;
+import com.ayno.aynobe.config.util.MediaPathGenerator;
 import com.ayno.aynobe.dto.common.PageResponseDTO;
 import com.ayno.aynobe.dto.user.*;
 import com.ayno.aynobe.entity.Artifact;
@@ -14,6 +15,7 @@ import com.ayno.aynobe.repository.JobRoleRepository;
 import com.ayno.aynobe.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +31,11 @@ public class UserService {
     private final JobRoleRepository jobRoleRepository;
     private final InterestRepository interestRepository;
     private final ArtifactRepository artifactRepository;
+
+    private final MediaPathGenerator pathGen;
+
+    @Value("${media.cloudfront.domain}")
+    private String cdnDomain;
 
     @Transactional
     public OnboardingResponseDTO getMyOnboarding(Long userId) {
@@ -108,6 +115,19 @@ public class UserService {
             user.changeNickname(request.getNickname());
         }
 
+        if (request.getProfileImageBaseKey() != null) {
+
+            // 1. baseKey: "user/1/profile/abc/original.jpg"
+            // 2. publicPath: "prod/public/user/1/profile/abc/original.jpg" (pathGen 로직)
+            String publicPath = pathGen.toPublicKey(request.getProfileImageBaseKey());
+
+            // 3. Full URL: "https://cdn.ayno.co.kr/prod/public/user/1/profile/abc/original.jpg"
+            String fullUrl = cdnDomain + "/" + publicPath;
+
+            // 4. DB에는 Full URL 저장 (나중에 조회할 때 편하려고)
+            user.changeProfileImageUrl(fullUrl);
+        }
+
         if (request.getGender() != null) user.changeGender(request.getGender());
         if (request.getAgeBand() != null) user.changeAgeBand(request.getAgeBand());
         if (request.getAiUsageDepth() != null) user.changeAiUsageDepth(request.getAiUsageDepth());
@@ -118,29 +138,29 @@ public class UserService {
             user.changeJobRole(jobRole);
         }
 
-        // 3. 관심사 변경 (팀원님의 Diffing 로직 채용)
+        // 관심사 변경
         if (request.getInterestIds() != null) {
             if (request.getInterestIds().size() > 3) {
                 throw CustomException.badRequest("관심분야는 최대 3개까지 선택할 수 있습니다.");
             }
 
-            // 3-1. 현재 가지고 있는 ID 목록 추출
+            // 현재 가지고 있는 ID 목록 추출
             Set<Integer> currentIds = user.getUserInterests().stream()
                     .map(ui -> ui.getInterest().getInterestId())
                     .collect(Collectors.toSet());
 
-            // 3-2. 요청받은 ID 목록
+            // 요청받은 ID 목록
             Set<Integer> desiredIds = new HashSet<>(request.getInterestIds());
 
-            // 3-3. 삭제할 ID 계산 (현재 - 요청)
+            // 삭제할 ID 계산 (현재 - 요청)
             Set<Integer> idsToRemove = new HashSet<>(currentIds);
             idsToRemove.removeAll(desiredIds);
 
-            // 3-4. 추가할 ID 계산 (요청 - 현재)
+            // 추가할 ID 계산 (요청 - 현재)
             Set<Integer> idsToAdd = new HashSet<>(desiredIds);
             idsToAdd.removeAll(currentIds);
 
-            // 3-5. 추가할 엔티티 조회 (필요한 것만 DB 조회)
+            // 추가할 엔티티 조회 (필요한 것만 DB 조회)
             List<Interest> interestsToAdd = Collections.emptyList();
             if (!idsToAdd.isEmpty()) {
                 interestsToAdd = interestRepository.findAllById(idsToAdd);
@@ -150,7 +170,7 @@ public class UserService {
                 }
             }
 
-            // 3-6. 엔티티에게 업데이트 위임 (도메인 메서드 호출)
+            // 엔티티에게 업데이트 위임 (도메인 메서드 호출)
             user.updateInterests(idsToRemove, interestsToAdd);
         }
 

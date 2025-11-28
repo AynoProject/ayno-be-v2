@@ -6,6 +6,7 @@ import com.ayno.aynobe.dto.asset.UploadDeleteRequestDTO;
 import com.ayno.aynobe.dto.asset.UploadPresignRequestDTO;
 import com.ayno.aynobe.dto.asset.UploadPresignResponseDTO;
 import com.ayno.aynobe.entity.User;
+import com.ayno.aynobe.entity.enums.UploadScope;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -52,7 +53,13 @@ public class S3Service {
                 req.getExt()
         );
 
-        String s3Key = pathGen.toPrivateKey(baseKey);
+        String s3Key;
+        if (req.getScope() == UploadScope.PROFILE) {
+            s3Key = pathGen.toPublicKey(baseKey); // public/... (즉시 공개)
+        } else {
+            s3Key = pathGen.toPrivateKey(baseKey); // private/... (발행 전까지 숨김)
+        }
+
         String contentType = mimeFromExt(req.getExt());
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
