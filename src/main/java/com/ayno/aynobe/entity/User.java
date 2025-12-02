@@ -27,8 +27,14 @@ public class User extends BaseTimeEntity {
     @Column(length = 256)
     private String username;
 
+    @Column(length = 256)
+    private String nickname;
+
     @Column(length = 512)
     private String passwordHash;
+
+    @Column(length = 512)
+    private String profileImageUrl;
 
     @Builder.Default
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -66,12 +72,11 @@ public class User extends BaseTimeEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reaction> reactions = new ArrayList<>();
 
+    public void changeNickname(String nickname) {this.nickname = nickname;}
+    public void changeProfileImageUrl(String profileImageUrl) {this.profileImageUrl = profileImageUrl;}
     public void changeGender(GenderType gender) { this.gender = gender; }
-
     public void changeAgeBand(AgeBand ageBand) { this.ageBand = ageBand; }
-
     public void changeAiUsageDepth(UsageDepthType depth) { this.aiUsageDepth = depth; }
-
     public void changeJobRole(JobRole jobRole) { this.jobRole = jobRole; }
 
     public void updateInterests(Set<Integer> interestIdsToRemove,

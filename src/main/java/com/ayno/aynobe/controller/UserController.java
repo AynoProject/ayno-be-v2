@@ -1,13 +1,16 @@
 package com.ayno.aynobe.controller;
 
 import com.ayno.aynobe.config.security.CustomUserDetails;
+import com.ayno.aynobe.dto.common.PageResponseDTO;
 import com.ayno.aynobe.dto.common.Response;
-import com.ayno.aynobe.dto.user.OnboardingResponseDTO;
-import com.ayno.aynobe.dto.user.OnboardingUpsertRequestDTO;
+import com.ayno.aynobe.dto.user.*;
+import com.ayno.aynobe.entity.enums.VisibilityType;
 import com.ayno.aynobe.service.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -49,4 +52,52 @@ public class UserController {
         return ResponseEntity.ok()
                 .body(Response.success(userService.upsertOnboarding(principal.getUser().getUserId(), request)));
     }
+
+    @Operation(
+            summary = "내 프로필 정보 가져오기"
+    )
+    @GetMapping("/me/profile")
+    public ResponseEntity<Response<ProfileResponseDTO>> getMyProfile(
+            @AuthenticationPrincipal CustomUserDetails principal
+    ){
+        return ResponseEntity.ok()
+                .body(Response.success(userService.getMyProfile(principal.getUser().getUserId())));
+    }
+
+    @Operation(summary = "내 프로필 수정", description = "닉네임, 직무, 관심사, 기타 정보를 수정합니다. (이미지 제외)")
+    @PutMapping("/me/profile")
+    public ResponseEntity<Response<ProfileResponseDTO>> updateProfile(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestBody ProfileUpdateRequestDTO request
+    ) {
+        return ResponseEntity.ok()
+                .body(Response.success(
+                        userService.updateProfile(principal.getUser().getUserId(), request)
+                ));
+    }
+
+    @Operation(
+            summary = "내 결과물 목록 가져오기"
+    )
+    @GetMapping("/me/artifact")
+    public ResponseEntity<Response<PageResponseDTO<MyArtifactListItemResponseDTO>>> getMyArtifact(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestParam(required = false) VisibilityType visibility,
+            @ParameterObject Pageable pageable
+    ){
+        return ResponseEntity.ok()
+                .body(Response.success(userService.getMyArtifact(principal.getUser().getUserId(), visibility ,pageable)));
+    }
+
+    @Operation(summary = "내가 좋아요 누른 작품 목록 조회")
+    @GetMapping("/me/likes")
+    public ResponseEntity<Response<PageResponseDTO<MyArtifactListItemResponseDTO>>> getLikedArtifacts(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @ParameterObject Pageable pageable
+    ) {
+        return ResponseEntity.ok()
+                .body(Response.success(userService.getLikedArtifacts(principal.getUser().getUserId(), pageable)));
+    }
+
+
 }

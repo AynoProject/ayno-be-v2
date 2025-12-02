@@ -1,6 +1,5 @@
 package com.ayno.aynobe.dto.user;
 
-import com.ayno.aynobe.entity.Interest;
 import com.ayno.aynobe.entity.User;
 import com.ayno.aynobe.entity.enums.AgeBand;
 import com.ayno.aynobe.entity.enums.GenderType;

@@ -86,7 +86,7 @@ public class ArtifactService {
 
         validateForCreate(requestDto);
 
-        // (선택) 워크플로우 연결: 존재 확인만 하고 참조 프록시로 세팅
+        // 워크플로우 연결: 존재 확인만 하고 참조 프록시로 세팅
         Workflow workflow = null;
         if (requestDto.getWorkflowId() != null) {
             Long wfId = requestDto.getWorkflowId();
@@ -130,16 +130,16 @@ public class ArtifactService {
             throw CustomException.duplicate("중복된 슬러그입니다: " + dto.getSlug());
         }
 
-        // ★ 2. (수정) S3 삭제 로직을 위해 *기존* 워크플로우와 *새* 워크플로우 ID를 미리 가져옵니다.
+        // ★ 2. S3 삭제 로직을 위해 *기존* 워크플로우와 *새* 워크플로우 ID를 미리 가져옵니다.
         Workflow oldWorkflow = artifact.getWorkflow(); // 현재 DB에 연결된 워크플로우
         Long newWorkflowId = dto.getWorkflowId();   // DTO로 전달된 새 워크플로우 ID (null일 수 있음)
 
-        // ★ 3. (신규) '고아'가 될 워크플로우가 있는지 감지 (연결 해제 또는 교체 시)
+        // ★ 3.'고아'가 될 워크플로우가 있는지 감지 (연결 해제 또는 교체 시)
         if (oldWorkflow != null && (newWorkflowId == null || !oldWorkflow.getWorkflowId().equals(newWorkflowId))) {
             // 기존 워크플로우가 있었는데, (1) 새 ID가 null이거나 (2) 새 ID가 기존 ID와 다르면
             // -> oldWorkflow는 '고아'가 되어 DB에서 삭제될 예정입니다. (by orphanRemoval)
 
-            // ★ 4. (신규) DB 레코드가 삭제되기 전에, S3에 저장된 섹션 파일들을 *먼저* 수동으로 삭제합니다.
+            // DB 레코드가 삭제되기 전에, S3에 저장된 섹션 파일들을 *먼저* 수동으로 삭제합니다.
             // (N+1 방지를 위해 baseKey 목록을 한번에 조회)
             List<String> sectionBaseKeys = stepSectionRepository.findAllBaseKeysByWorkflowId(oldWorkflow.getWorkflowId());
             for (String baseKey : sectionBaseKeys) {

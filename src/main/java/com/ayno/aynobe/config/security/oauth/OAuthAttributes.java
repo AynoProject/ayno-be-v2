@@ -17,6 +17,7 @@ public class OAuthAttributes {
     private final String provider;   // "google" | "kakao"
     private final String providerId; // Google: sub, Kakao: id
     private final String email;      // 필수 동의 전제
+    private String picture;
 
     public static OAuthAttributes of(String provider, Map<String, Object> attributes) {
         String id = Optional.ofNullable(provider).orElse("").trim().toLowerCase(Locale.ROOT);
@@ -43,16 +44,22 @@ public class OAuthAttributes {
     @SuppressWarnings("unchecked")
     private static OAuthAttributes ofKakao(String provider, Map<String, Object> attrs) {
         Object idObj = attrs.get("id");
-        if (idObj == null) throw CustomException.badRequest("Kakao 응답에 id가 없습니다");
+        if (idObj == null)
+            throw CustomException.badRequest("Kakao 응답에 id가 없습니다");
 
         Map<String, Object> account = (Map<String, Object>) attrs.getOrDefault("kakao_account", Map.of());
         Object email = account.get("email");
-        if (email == null || email.toString().isBlank()) throw CustomException.badRequest("Kakao 이메일 동의가 필요합니다");
+        if (email == null || email.toString().isBlank())
+            throw CustomException.badRequest("Kakao 이메일 동의가 필요합니다");
+
+        Map<String, Object> profile = (Map<String, Object>) account.getOrDefault("profile", Map.of());
+        String pictureUrl = (String) profile.get("profile_image_url");
 
         return OAuthAttributes.builder()
                 .provider(provider)
                 .providerId(idObj.toString())
                 .email(email.toString().toLowerCase())
+                .picture(pictureUrl)
                 .build();
     }
 }
