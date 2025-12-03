@@ -32,9 +32,10 @@ public class Report extends BaseTimeEntity{
     @Column(columnDefinition = "TEXT")
     private String reason;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
-    private ReportStatus status; // reportStatus -> status로 통일 권장
+    private ReportStatus status = ReportStatus.PENDING; // reportStatus -> status로 통일 권장
 
     @Column(columnDefinition = "TEXT")
     private String adminMemo; // 처리 결과 메모

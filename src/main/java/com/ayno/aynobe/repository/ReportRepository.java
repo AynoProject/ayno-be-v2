@@ -1,6 +1,7 @@
 package com.ayno.aynobe.repository;
 
 import com.ayno.aynobe.entity.Report;
+import com.ayno.aynobe.entity.User;
 import com.ayno.aynobe.entity.enums.ReportStatus;
 import com.ayno.aynobe.entity.enums.ReportTargetType;
 import org.springframework.data.domain.Page;
@@ -23,4 +24,6 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             @Param("startAt") LocalDateTime startAt,
             @Param("endAt") LocalDateTime endAt,
             Pageable pageable);
+
+    boolean existsByReporterAndTargetIdAndTargetType(User reporter, Long targetId, ReportTargetType targetType);
 }
