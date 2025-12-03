@@ -19,7 +19,7 @@ public class Report extends BaseTimeEntity{
     private Long reportId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reporter_id", nullable = false)
+    @JoinColumn(name = "reporterId", nullable = false)
     private User reporter; // 신고자
 
     @Column(nullable = false)
