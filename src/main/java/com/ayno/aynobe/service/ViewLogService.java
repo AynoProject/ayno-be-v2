@@ -2,7 +2,7 @@ package com.ayno.aynobe.service;
 
 import com.ayno.aynobe.config.exception.CustomException;
 import com.ayno.aynobe.config.security.CustomUserDetails;
-import com.ayno.aynobe.dto.log.ViewLogCreateRequestDTO;
+import com.ayno.aynobe.dto.log.ViewLogStartRequestDTO;
 import com.ayno.aynobe.dto.log.ViewLogEndRequestDTO;
 import com.ayno.aynobe.dto.log.ViewLogResponseDTO;
 import com.ayno.aynobe.entity.Artifact;
@@ -27,7 +27,7 @@ public class ViewLogService {
     private final ArtifactRepository artifactRepository;
 
     @Transactional
-    public ViewLogResponseDTO start(@Nullable CustomUserDetails principal, ViewLogCreateRequestDTO req) {
+    public ViewLogResponseDTO start(@Nullable CustomUserDetails principal, ViewLogStartRequestDTO req) {
         Long artifactId = req.getArtifactId();
 
         // 비로그인: 저장 안 함 → 조회수만 증가, viewId는 null
