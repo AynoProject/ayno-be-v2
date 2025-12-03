@@ -13,7 +13,6 @@ import lombok.*;
                 @Index(name = "idx_section_kind", columnList = "stepType, promptRole")
         })
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
