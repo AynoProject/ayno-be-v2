@@ -7,12 +7,14 @@ import com.ayno.aynobe.entity.User;
 import com.ayno.aynobe.entity.enums.AgeBand;
 import com.ayno.aynobe.entity.enums.GenderType;
 import com.ayno.aynobe.entity.enums.UsageDepthType;
+import com.ayno.aynobe.entity.enums.UserStatus;
 import com.ayno.aynobe.repository.LinkedAccountRepository;
 import com.ayno.aynobe.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 
@@ -64,6 +66,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                     return linkedAccountRepository.save(la);
                 });
 
-        return new CustomUserDetails(linked.getUser());
+        User user = linked.getUser();
+
+        // 2. [핵심 수정] 상태 체크는 여기서! (신규/기존 유저 모두 검사)
+        if (user.getStatus() == UserStatus.BLOCKED) {
+            throw new OAuth2AuthenticationException(new OAuth2Error("BLOCKED"), "관리자에 의해 차단된 계정입니다.");
+        }
+        if (user.getStatus() == UserStatus.WITHDRAWN) {
+            throw new OAuth2AuthenticationException(new OAuth2Error("WITHDRAWN"), "탈퇴한 계정입니다.");
+        }
+
+        return new CustomUserDetails(user);
     }
 }

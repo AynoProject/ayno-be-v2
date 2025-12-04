@@ -23,7 +23,11 @@ public class JsonAccessDeniedHandler implements AccessDeniedHandler {
     public void handle(HttpServletRequest request, HttpServletResponse response,
                        AccessDeniedException accessDeniedException) {
         try {
-            var body = Response.fail("AUTH.FORBIDDEN", "접근 권한이 없습니다.");
+            String message = accessDeniedException.getMessage();
+            if (message == null || message.isBlank()) {
+                message = "접근 권한이 없습니다.";
+            }
+            var body = Response.fail("AUTH.FORBIDDEN", message);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             response.setCharacterEncoding(StandardCharsets.UTF_8.name());
             response.setContentType(MediaType.APPLICATION_JSON_VALUE);

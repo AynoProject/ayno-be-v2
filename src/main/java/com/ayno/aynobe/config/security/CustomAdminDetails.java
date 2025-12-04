@@ -33,12 +33,12 @@ public class CustomAdminDetails implements UserDetails {
         return true;
     }
 
-    @Override public boolean isAccountNonLocked() {
-        return admin.getStatus() == AdminStatus.ACTIVE;
-    }
-
     @Override public boolean isCredentialsNonExpired() {
         return true;
+    }
+
+    @Override public boolean isAccountNonLocked() {
+        return admin.getStatus() == AdminStatus.ACTIVE;
     }
 
     @Override public boolean isEnabled() {
