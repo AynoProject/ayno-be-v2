@@ -53,9 +53,7 @@ public class UserController {
                 .body(Response.success(userService.upsertOnboarding(principal.getUser().getUserId(), request)));
     }
 
-    @Operation(
-            summary = "내 프로필 정보 가져오기"
-    )
+    @Operation(summary = "내 프로필 정보 가져오기")
     @GetMapping("/me/profile")
     public ResponseEntity<Response<ProfileResponseDTO>> getMyProfile(
             @AuthenticationPrincipal CustomUserDetails principal
@@ -76,9 +74,7 @@ public class UserController {
                 ));
     }
 
-    @Operation(
-            summary = "내 결과물 목록 가져오기"
-    )
+    @Operation(summary = "내 결과물 목록 가져오기")
     @GetMapping("/me/artifact")
     public ResponseEntity<Response<PageResponseDTO<MyArtifactListItemResponseDTO>>> getMyArtifact(
             @AuthenticationPrincipal CustomUserDetails principal,

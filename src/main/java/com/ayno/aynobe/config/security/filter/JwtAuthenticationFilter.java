@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -32,6 +34,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final CustomUserDetailsService userDetailsService;
     private final CustomAdminDetailsService adminDetailsService;
     private final CookieFactory cookieFactory;
+
+    private final JsonAccessDeniedHandler accessDeniedHandler;
 
     // 화이트리스트 (인증 제외)
     private static final List<String> WHITELIST_PREFIXES = List.of(
@@ -76,7 +80,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     chain.doFilter(request, response);
                     return;
                 }
-            } catch (RuntimeException ignored) {}
+            } catch (AccountStatusException e) {
+                accessDeniedHandler.handle(request, response, new AccessDeniedException(e.getMessage()));
+                return;
+            }
+            catch (RuntimeException ignored) {}
         }
 
         // access 없거나 만료 → refresh 로 재발급 시도
@@ -90,7 +98,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.access(newAccess).toString());
                     setAuthentication(request, principal);
                 }
-            } catch (RuntimeException ignored) {}
+            } catch (AccountStatusException e) {
+                accessDeniedHandler.handle(request, response, new AccessDeniedException(e.getMessage()));
+                return;
+            }
+            catch (RuntimeException ignored) {}
         }
         chain.doFilter(request, response);
     }

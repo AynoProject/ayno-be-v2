@@ -2,7 +2,7 @@ package com.ayno.aynobe.controller;
 
 import com.ayno.aynobe.config.security.CustomUserDetails;
 import com.ayno.aynobe.dto.common.Response;
-import com.ayno.aynobe.dto.log.ViewLogCreateRequestDTO;
+import com.ayno.aynobe.dto.log.ViewLogStartRequestDTO;
 import com.ayno.aynobe.dto.log.ViewLogEndRequestDTO;
 import com.ayno.aynobe.dto.log.ViewLogResponseDTO;
 import com.ayno.aynobe.service.ViewLogService;
@@ -29,7 +29,7 @@ public class ViewLogController {
     @PostMapping("/start")
     public ResponseEntity<Response<ViewLogResponseDTO>> start(
             @AuthenticationPrincipal @Nullable CustomUserDetails principal,
-            @Valid @RequestBody ViewLogCreateRequestDTO req
+            @Valid @RequestBody ViewLogStartRequestDTO req
     ) {
         var result = viewLogService.start(principal, req);
         return ResponseEntity.ok(Response.success(result));

@@ -1,11 +1,8 @@
 package com.ayno.aynobe.dto.log;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
-
-import java.time.LocalDateTime;
 
 /**
  * 조회 시작(진입) 요청 DTO
@@ -15,7 +12,7 @@ import java.time.LocalDateTime;
 @Getter @Setter
 @NoArgsConstructor @AllArgsConstructor
 @Builder
-public class ViewLogCreateRequestDTO {
+public class ViewLogStartRequestDTO {
 
     @Schema(description = "결과물 ID", example = "123")
     @NotNull

@@ -1,6 +1,7 @@
 package com.ayno.aynobe.config.security;
 
 import com.ayno.aynobe.entity.User;
+import com.ayno.aynobe.entity.enums.UserStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -58,17 +59,17 @@ public class CustomUserDetails implements UserDetails, OAuth2User {
     }
 
     @Override
-    public boolean isAccountNonLocked() {
-        return true;  // 계정 잠금 여부
-    }
-
-    @Override
     public boolean isCredentialsNonExpired() {
         return true;  // 비밀번호 만료 여부
     }
 
     @Override
+    public boolean isAccountNonLocked() {
+        return this.user.getStatus() != UserStatus.BLOCKED;
+    }
+
+    @Override
     public boolean isEnabled() {
-        return true;  // 계정 활성화 여부
+        return this.user.getStatus() == UserStatus.ACTIVE;
     }
 }

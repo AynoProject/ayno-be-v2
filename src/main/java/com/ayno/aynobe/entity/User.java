@@ -3,6 +3,7 @@ package com.ayno.aynobe.entity;
 import com.ayno.aynobe.entity.enums.AgeBand;
 import com.ayno.aynobe.entity.enums.GenderType;
 import com.ayno.aynobe.entity.enums.UsageDepthType;
+import com.ayno.aynobe.entity.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -72,12 +73,18 @@ public class User extends BaseTimeEntity {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Reaction> reactions = new ArrayList<>();
 
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, nullable = false)
+    private UserStatus status = UserStatus.ACTIVE;
+
     public void changeNickname(String nickname) {this.nickname = nickname;}
     public void changeProfileImageUrl(String profileImageUrl) {this.profileImageUrl = profileImageUrl;}
     public void changeGender(GenderType gender) { this.gender = gender; }
     public void changeAgeBand(AgeBand ageBand) { this.ageBand = ageBand; }
     public void changeAiUsageDepth(UsageDepthType depth) { this.aiUsageDepth = depth; }
     public void changeJobRole(JobRole jobRole) { this.jobRole = jobRole; }
+    public void changeStatus(UserStatus status) {this.status = status;}
 
     public void updateInterests(Set<Integer> interestIdsToRemove,
                                 Collection<Interest> interestsToAdd) {

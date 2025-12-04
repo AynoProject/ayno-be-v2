@@ -15,7 +15,6 @@ import lombok.*;
                 @Index(name = "idx_reaction_user",   columnList = "userId, reactionType")
         })
 @Getter
-@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
