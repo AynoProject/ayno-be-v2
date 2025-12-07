@@ -25,7 +25,7 @@ public class AdminUserController {
 
     private final AdminUserService adminUserService;
 
-    @Operation(summary = "유저 목록 조회", description = "검색, 상태 필터, 기간 조회 지원")
+    @Operation(summary = "유저 검색", description = "검색, 상태 필터, 기간 조회 지원")
     @GetMapping
     public ResponseEntity<Response<PageResponseDTO<AdminUserResponseDTO>>> getUsers(
             @RequestParam(required = false) UserStatus status,

@@ -52,26 +52,6 @@ public class ArtifactService {
                 .build();
     }
 
-    private Sort resolveSort(String sort) {
-        String field = "createdAt";
-        Sort.Direction dir = Sort.Direction.DESC;
-
-        if (sort != null && !sort.isBlank()) {
-            String[] parts = sort.split(",", 2);
-
-            if (parts.length >= 1 && !parts[0].isBlank()) {
-                String candidate = parts[0].trim();
-                if ("createdAt".equals(candidate) || "likeCount".equals(candidate) || "viewCount".equals(candidate)) {
-                    field = candidate;
-                }
-            }
-            if (parts.length == 2 && "asc".equalsIgnoreCase(parts[1].trim())) {
-                dir = Sort.Direction.ASC;
-            }
-        }
-        return Sort.by(dir, field);
-    }
-
     @Transactional
     public ArtifactDetailResponseDTO getDetail(Long artifactId) {
         Artifact artifact = artifactRepository.findById(artifactId)
@@ -207,5 +187,55 @@ public class ArtifactService {
         return ArtifactDeleteResponseDTO.builder()
                 .artifactId(artifactId)
                 .build();
+    }
+
+    public PageResponseDTO<ArtifactListItemResponseDTO> searchPublicArtifacts(
+            FlowType category,
+            String keyword,
+            String sort,
+            Pageable pageable
+    ) {
+        // 1. 정렬 조건 처리 (Pageable 객체 재생성)
+        // 프론트에서 "latest"라고 보내면 "createAt"으로, "popular"면 "likeCount"로 변환
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                resolveSort(sort)
+        );
+
+        // 2. 검색 실행
+        Page<Artifact> result = artifactRepository.searchPublic(category, keyword, sortedPageable);
+
+        // 3. DTO 변환 (우리가 아까 만든 Light DTO 사용)
+        return PageResponseDTO.<ArtifactListItemResponseDTO>builder()
+                .content(result.getContent().stream()
+                        .map(ArtifactListItemResponseDTO::from)
+                        .toList())
+                .page(result.getNumber())
+                .size(result.getSize())
+                .totalElements(result.getTotalElements())
+                .totalPages(result.getTotalPages())
+                .hasNext(result.hasNext())
+                .build();
+    }
+
+    private Sort resolveSort(String sort) {
+        String field = "createdAt";
+        Sort.Direction dir = Sort.Direction.DESC;
+
+        if (sort != null && !sort.isBlank()) {
+            String[] parts = sort.split(",", 2);
+
+            if (parts.length >= 1 && !parts[0].isBlank()) {
+                String candidate = parts[0].trim();
+                if ("createdAt".equals(candidate) || "likeCount".equals(candidate) || "viewCount".equals(candidate)) {
+                    field = candidate;
+                }
+            }
+            if (parts.length == 2 && "asc".equalsIgnoreCase(parts[1].trim())) {
+                dir = Sort.Direction.ASC;
+            }
+        }
+        return Sort.by(dir, field);
     }
 }
