@@ -26,6 +26,8 @@ public class ArtifactDetailResponseDTO {
     private String slug;
     private FlowType category;
     private Long userId;
+    private String nickname;
+    private String profileImageUrl;
     private Long workflowId;          // nullable
     private List<ArtifactMediaResponseDTO> medias;
     private LocalDateTime createdAt;
@@ -42,6 +44,8 @@ public class ArtifactDetailResponseDTO {
                 .slug(a.getSlug())
                 .category(a.getCategory())
                 .userId(a.getUser().getUserId())
+                .nickname(a.getUser().getNickname())
+                .profileImageUrl(a.getUser().getProfileImageUrl())
                 .workflowId(a.getWorkflow() != null ? a.getWorkflow().getWorkflowId() : null)
                 .medias(a.getMedias().stream().map(ArtifactMediaResponseDTO::from).toList())
                 .createdAt(a.getCreatedAt())
