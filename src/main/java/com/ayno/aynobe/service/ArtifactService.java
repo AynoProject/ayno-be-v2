@@ -54,10 +54,8 @@ public class ArtifactService {
 
     @Transactional
     public ArtifactDetailResponseDTO getDetail(Long artifactId) {
-        Artifact artifact = artifactRepository.findById(artifactId)
+        Artifact artifact = artifactRepository.findDetailById(artifactId)
                 .orElseThrow(() -> CustomException.notFound("Artifact with id " + artifactId + " not found"));
-        // LAZY 로딩 허용: 트랜잭션 내에서 medias 접근
-        artifact.getMedias().size();
         return ArtifactDetailResponseDTO.from(artifact);
     }
 

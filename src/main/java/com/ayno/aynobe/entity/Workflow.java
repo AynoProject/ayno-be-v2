@@ -1,10 +1,8 @@
 package com.ayno.aynobe.entity;
 
-import com.ayno.aynobe.dto.workflow.WorkflowCardDTO;
 import com.ayno.aynobe.dto.workflow.WorkflowCreateRequestDTO;
 import com.ayno.aynobe.dto.workflow.WorkflowDetailResponseDTO;
 import com.ayno.aynobe.entity.enums.FlowType;
-import com.ayno.aynobe.entity.enums.VisibilityType;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.*;
 import lombok.*;
