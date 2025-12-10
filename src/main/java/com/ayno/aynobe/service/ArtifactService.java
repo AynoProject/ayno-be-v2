@@ -194,7 +194,6 @@ public class ArtifactService {
             Pageable pageable
     ) {
         // 1. 정렬 조건 처리 (Pageable 객체 재생성)
-        // 프론트에서 "latest"라고 보내면 "createAt"으로, "popular"면 "likeCount"로 변환
         Pageable sortedPageable = PageRequest.of(
                 pageable.getPageNumber(),
                 pageable.getPageSize(),

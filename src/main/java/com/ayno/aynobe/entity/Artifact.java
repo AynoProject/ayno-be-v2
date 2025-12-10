@@ -50,6 +50,9 @@ public class Artifact extends BaseTimeEntity {
     @Column(nullable = false, length = 100)
     private String artifactTitle;
 
+    @Column(length = 512)
+    private String thumbnailUrl;
+
     @Builder.Default
     @Column(nullable = false)
     private Boolean isPremium = false;
@@ -101,38 +104,47 @@ public class Artifact extends BaseTimeEntity {
                 .build();
     }
 
-    /** 미디어 일괄 추가 (DTO → Entity 변환 + 역참조 세팅) */
     public void addMediasFrom(List<ArtifactCreateRequestDTO.MediaDTO> mediaDtos) {
         if (mediaDtos == null || mediaDtos.isEmpty()) return;
 
-        // 1) baseKey 중복 제거(등장 순서 유지)
+        // baseKey 중복 제거(등장 순서 유지)
         Map<String, ArtifactCreateRequestDTO.MediaDTO> unique = new LinkedHashMap<>();
         for (var m : mediaDtos) {
             unique.putIfAbsent(m.getBaseKey(), m);
         }
         List<ArtifactCreateRequestDTO.MediaDTO> dedup = new ArrayList<>(unique.values());
 
-        // 2) 커버 개수 검증
         long coverCnt = dedup.stream().filter(ArtifactCreateRequestDTO.MediaDTO::isCover).count();
         if (coverCnt > 1) {
             throw CustomException.badRequest("커버 이미지는 1개까지만 허용됩니다.");
         }
 
-        // 3) 엔티티 변환 + 역참조 세팅
+        // 엔티티 변환 + 역참조 세팅
         List<ArtifactMedia> list = new ArrayList<>(dedup.size());
+        ArtifactMedia coverMedia = null; // 커버 후보
+
         for (var m : dedup) {
             ArtifactMedia em = ArtifactMedia.from(m);
             em.assignArtifact(this);
             list.add(em);
+
+            // 사용자가 "이게 커버야(isCover=true)"라고 한 놈 찾기
+            if (em.isCover()) {
+                coverMedia = em;
+            }
         }
 
-        // 4) 커버가 없으면 첫 번째를 커버로 지정
+        // 커버가 없으면 첫 번째를 커버로 지정
         if (coverCnt == 0 && !list.isEmpty()) {
-            list.get(0).markAsCover();
+            coverMedia = list.get(0);
+            coverMedia.markAsCover();
         }
 
-        // 5) 추가
         this.medias.addAll(list);
+
+        if (coverMedia != null) {
+            this.thumbnailUrl = coverMedia.getBaseKey();
+        }
     }
 
     public void applyHeader(ArtifactUpdateRequestDTO dto) {
@@ -149,32 +161,43 @@ public class Artifact extends BaseTimeEntity {
         this.workflow = workflow;
     }
 
-    /** MVP: 미디어 전체 교체(기존 orphanRemoval=true 가정) */
     public void replaceMediasFrom(List<ArtifactUpdateRequestDTO.MediaDTO> mediaDtos) {
-        this.medias.clear();                           // orphanRemoval=true 가정 → 기존 행 제거
+        this.medias.clear();
+        this.thumbnailUrl = null;// orphanRemoval=true 가정 → 기존 행 제거
         if (mediaDtos == null || mediaDtos.isEmpty()) return;
 
-        // 1) baseKey 중복 제거 (등장 순서 유지)
+        // baseKey 중복 제거 (등장 순서 유지)
         Map<String, ArtifactUpdateRequestDTO.MediaDTO> unique = new LinkedHashMap<>();
         for (var m : mediaDtos) unique.putIfAbsent(m.getBaseKey(), m);
         List<ArtifactUpdateRequestDTO.MediaDTO> dedup = new ArrayList<>(unique.values());
 
-        // 2) 커버 개수 검증
         long coverCnt = dedup.stream().filter(ArtifactUpdateRequestDTO.MediaDTO::isCover).count();
         if (coverCnt > 1) throw new IllegalArgumentException("커버 이미지는 1개까지만 허용합니다.");
 
-        // 3) 엔티티 변환 + 역참조
+        // 엔티티 변환 + 역참조
         List<ArtifactMedia> list = new ArrayList<>(dedup.size());
+        ArtifactMedia coverMedia = null;
+
         for (var m : dedup) {
             ArtifactMedia em = ArtifactMedia.from(m); // baseKey / sortOrder / isCover / caption 모두 NOT NULL(캡션만 null)
             em.assignArtifact(this);
             list.add(em);
+
+            if (em.isCover()) {
+                coverMedia = em;
+            }
         }
 
-        // 4) 커버가 없다면 첫 번째를 커버
-        if (coverCnt == 0 && !list.isEmpty()) list.get(0).markAsCover();
+        if (coverCnt == 0 && !list.isEmpty()) {
+            coverMedia = list.get(0);
+            coverMedia.markAsCover();
+        }
 
         this.medias.addAll(list);
+
+        if (coverMedia != null) {
+            this.thumbnailUrl = coverMedia.getBaseKey();
+        }
     }
 
     public void publish() {
