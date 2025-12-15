@@ -16,4 +16,7 @@ public class SignUpRequestDTO {
     @Schema(description = "비밀번호", example = "testpass", requiredMode = Schema.RequiredMode.REQUIRED)
     @NotBlank(message = "비밀번호는 필수 입력 값입니다.")
     private String password;
+
+    @Schema(description = "마케팅 수신 동의 여부", example = "true")
+    private boolean marketingAgreed;
 }

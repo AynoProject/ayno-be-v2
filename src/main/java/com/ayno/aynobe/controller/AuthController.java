@@ -31,8 +31,8 @@ public class AuthController {
         HttpHeaders headers = new HttpHeaders();
         LoginTokensDTO tokens = authService.login(request);
 
-        headers.add(HttpHeaders.SET_COOKIE, cookieFactory.access(tokens.getAccessToken()).toString());
-        headers.add(HttpHeaders.SET_COOKIE, cookieFactory.refresh(tokens.getRefreshToken()).toString());
+        headers.add(HttpHeaders.SET_COOKIE, cookieFactory.createUserAccess(tokens.getAccessToken()).toString());
+        headers.add(HttpHeaders.SET_COOKIE, cookieFactory.createUserRefresh(tokens.getRefreshToken()).toString());
 
         return ResponseEntity
                 .ok()

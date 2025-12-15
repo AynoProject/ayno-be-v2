@@ -35,16 +35,16 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                                         Authentication authentication) throws IOException {
         CustomUserDetails principal = (CustomUserDetails) authentication.getPrincipal();
 
-
         String access  = jwtService.generateAccessToken(principal);
         String refresh = jwtService.generateRefreshToken(principal);
 
-        response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.access(access).toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.refresh(refresh).toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.createUserAccess(access).toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.createUserRefresh(refresh).toString());
 
-        String env = appEnv == null ? "local" : appEnv.trim().toLowerCase(Locale.ROOT);
+        String env = appEnv.trim().toLowerCase(Locale.ROOT);
         String target = "dev".equals(env) ?
-                redirectDev : "prod".equals(env) ? redirectProd : redirectLocal;
+                redirectDev : "prod".equals(env) ?
+                    redirectProd : redirectLocal;
         response.sendRedirect(target);
     }
 }

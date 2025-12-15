@@ -81,31 +81,6 @@ public class JwtService {
         return new JwtPayload(subject, roles, exp, tokenType);
     }
 
-    // 검증
-    public String extractUserId(String token) {
-        try {
-            return payload(token).subject();
-        }
-        catch (ExpiredJwtException e) {
-            throw CustomException.unauthorized("JWT가 만료되었습니다.");
-        }
-        catch (MalformedJwtException | IllegalArgumentException e) {
-            throw CustomException.unauthorized("잘못된 JWT 형식입니다.");
-        }
-        catch (JwtException e) {
-            throw CustomException.unauthorized("JWT 검증에 실패했습니다.");
-        }
-    }
-
-    public List<String> extractRoles(String token) {
-        try {
-            return payload(token).roles();
-        }
-        catch (JwtException e) {
-            return List.of();
-        }
-    }
-
     public boolean isTokenValid(JwtPayload p, UserDetails user) {
         return user.getUsername().equals(p.subject()) && p.expiration().after(new Date());
     }
