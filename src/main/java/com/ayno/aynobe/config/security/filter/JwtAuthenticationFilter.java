@@ -11,6 +11,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AccountStatusException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -26,9 +27,6 @@ import java.util.List;
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
-
-    private static final String ACCESS_COOKIE  = "accessToken";
-    private static final String REFRESH_COOKIE = "refreshToken";
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
@@ -65,37 +63,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+        boolean isAdminEndpoint = uri.startsWith("/api/admin");
+
+        String accessCookieName = isAdminEndpoint ? CookieFactory.ADMIN_ACCESS_COOKIE : CookieFactory.USER_ACCESS_COOKIE;
+        String refreshCookieName = isAdminEndpoint ? CookieFactory.ADMIN_REFRESH_COOKIE : CookieFactory.USER_REFRESH_COOKIE;
+
         // accessToken 우선 시도
-        String accessToken = getCookieValue(request, ACCESS_COOKIE);
+        String accessToken = getCookieValue(request, accessCookieName);
         if (accessToken != null) {
             try {
-                var tokenInfor = jwtService.payload(accessToken);
-                String username = tokenInfor.subject();
-                var roles = tokenInfor.roles();
-
-                UserDetails principal = loadByRoles(username, roles);
-
-                if (jwtService.isTokenValid(tokenInfor, principal)) {
-                    setAuthentication(request, principal);
-                    chain.doFilter(request, response);
-                    return;
-                }
+                processTokenAuthentication(accessToken);
+                chain.doFilter(request, response);
+                return;
             } catch (AccountStatusException e) {
                 accessDeniedHandler.handle(request, response, new AccessDeniedException(e.getMessage()));
                 return;
-            }
-            catch (RuntimeException ignored) {}
+            } catch (RuntimeException ignored) {}
         }
 
         // access 없거나 만료 → refresh 로 재발급 시도
-        String refreshToken = getCookieValue(request, REFRESH_COOKIE);
+        String refreshToken = getCookieValue(request, refreshCookieName);
         if (refreshToken != null) {
             try {
                 var tokenInfor = jwtService.payload(refreshToken);
                 if (jwtService.isRefreshTokenValid(tokenInfor)) {
                     UserDetails principal = loadByRoles(tokenInfor.subject(), tokenInfor.roles());
                     String newAccess = jwtService.generateAccessToken(principal);
-                    response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.access(newAccess).toString());
+
+                    ResponseCookie newCookie = isAdminEndpoint
+                            ? cookieFactory.createAdminAccess(newAccess)
+                            : cookieFactory.createUserAccess(newAccess);
+
+                    response.addHeader(HttpHeaders.SET_COOKIE, newCookie.toString());
                     setAuthentication(request, principal);
                 }
             } catch (AccountStatusException e) {
@@ -108,6 +107,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     // 헬퍼
+    private void processTokenAuthentication(String token) {
+        var tokenInfo = jwtService.payload(token);
+        UserDetails principal = loadByRoles(tokenInfo.subject(), tokenInfo.roles());
+        if (jwtService.isTokenValid(tokenInfo, principal)) {
+            setAuthentication(null, principal); // request는 필요 없어서 null 처리하거나 수정
+        }
+    }
+
     private boolean isWhitelisted(String uri) {
         for (String prefix : WHITELIST_PREFIXES) {
             if (uri.startsWith(prefix)) return true;

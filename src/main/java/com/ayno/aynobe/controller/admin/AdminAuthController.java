@@ -36,8 +36,8 @@ public class AdminAuthController {
         LoginTokensDTO tokens = adminAuthService.login(request);
 
         HttpHeaders headers = new HttpHeaders();
-        headers.add(HttpHeaders.SET_COOKIE, cookieFactory.access(tokens.getAccessToken()).toString());
-        headers.add(HttpHeaders.SET_COOKIE, cookieFactory.refresh(tokens.getRefreshToken()).toString());
+        headers.add(HttpHeaders.SET_COOKIE, cookieFactory.createAdminAccess(tokens.getAccessToken()).toString());
+        headers.add(HttpHeaders.SET_COOKIE, cookieFactory.createAdminRefresh(tokens.getRefreshToken()).toString());
 
         return ResponseEntity.ok()
                 .headers(headers)

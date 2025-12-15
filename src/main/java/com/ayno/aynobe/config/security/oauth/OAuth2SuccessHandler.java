@@ -38,8 +38,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         String access  = jwtService.generateAccessToken(principal);
         String refresh = jwtService.generateRefreshToken(principal);
 
-        response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.access(access).toString());
-        response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.refresh(refresh).toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.createUserAccess(access).toString());
+        response.addHeader(HttpHeaders.SET_COOKIE, cookieFactory.createUserRefresh(refresh).toString());
 
         String env = appEnv.trim().toLowerCase(Locale.ROOT);
         String target = "dev".equals(env) ?
