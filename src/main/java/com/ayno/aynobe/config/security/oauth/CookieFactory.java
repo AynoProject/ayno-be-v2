@@ -22,8 +22,8 @@ public class CookieFactory {
     }
 
     private ResponseCookie build(String name, String value, Duration maxAge) {
-        boolean secure   = !"local".equalsIgnoreCase(appEnv); // dev/prod: https
-        String sameSite  = secure ? "None" : "Lax";           // None은 Secure 필수
+        boolean secure = !"local".equalsIgnoreCase(appEnv); // dev/prod: https
+        String sameSite = secure ? "None" : "Lax";           // None은 Secure 필수
         return ResponseCookie.from(name, value)
                 .httpOnly(true)
                 .secure(secure)

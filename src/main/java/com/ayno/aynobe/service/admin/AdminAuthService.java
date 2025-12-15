@@ -3,7 +3,11 @@ package com.ayno.aynobe.service.admin;
 import com.ayno.aynobe.config.exception.CustomException;
 import com.ayno.aynobe.config.security.CustomAdminDetails;
 import com.ayno.aynobe.config.security.service.JwtService;
+import com.ayno.aynobe.dto.admin.AdminProfileResponseDTO;
 import com.ayno.aynobe.dto.auth.*;
+import com.ayno.aynobe.entity.Admin;
+import com.ayno.aynobe.repository.AdminRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -12,13 +16,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class AdminAuthService {
+
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final AdminRepository adminRepository;
 
     public AdminAuthService(@Qualifier("adminAuthManager") AuthenticationManager authenticationManager,
-                            JwtService jwtService) {
+                            JwtService jwtService,  AdminRepository adminRepository) {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.adminRepository = adminRepository;
     }
 
     @Transactional
@@ -42,5 +49,11 @@ public class AdminAuthService {
                 .accessToken(access)
                 .refreshToken(refresh)
                 .build();
+    }
+
+    public AdminProfileResponseDTO getAdminProfile(Long adminId) {
+        Admin admin = adminRepository.findById(adminId)
+                .orElseThrow(() -> CustomException.notFound("관리자를 찾을 수 없습니다."));
+        return AdminProfileResponseDTO.from(admin);
     }
 }

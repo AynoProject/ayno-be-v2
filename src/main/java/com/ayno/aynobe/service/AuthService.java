@@ -17,6 +17,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Service
 public class AuthService {
     private final AuthenticationManager authenticationManager;
@@ -60,6 +62,8 @@ public class AuthService {
                 .gender(GenderType.NONE)
                 .aiUsageDepth(UsageDepthType.NONE)
                 .ageBand(AgeBand.NONE)
+                .marketingAgreed(request.isMarketingAgreed())
+                .marketingAgreedAt(request.isMarketingAgreed() ? LocalDateTime.now() : null)
                 .build();
 
         try {

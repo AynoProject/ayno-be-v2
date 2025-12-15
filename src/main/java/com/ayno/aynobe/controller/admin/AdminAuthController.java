@@ -1,6 +1,8 @@
 package com.ayno.aynobe.controller.admin;
 
+import com.ayno.aynobe.config.security.CustomAdminDetails;
 import com.ayno.aynobe.config.security.oauth.CookieFactory;
+import com.ayno.aynobe.dto.admin.AdminProfileResponseDTO;
 import com.ayno.aynobe.dto.auth.LoginRequestDTO;
 import com.ayno.aynobe.dto.auth.LoginResponseDTO;
 import com.ayno.aynobe.dto.auth.LoginTokensDTO;
@@ -11,14 +13,12 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "AdminAuth", description = "관리자 로그인 관련 API")
 @RestController
-@RequestMapping("/api/admin/auth")
+@RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class AdminAuthController {
 
@@ -29,7 +29,7 @@ public class AdminAuthController {
             summary = "관리자 로그인",
             description = "관리자 계정으로 JWT를 발급받습니다."
     )
-    @PostMapping("/login")
+    @PostMapping("/auth/login")
     public ResponseEntity<Response<LoginResponseDTO>> login(
             @RequestBody LoginRequestDTO request
     ) {
@@ -42,5 +42,17 @@ public class AdminAuthController {
         return ResponseEntity.ok()
                 .headers(headers)
                 .body(Response.success(new LoginResponseDTO("관리자 로그인 성공")));
+    }
+
+    @Operation(
+            summary = "관리자 정보",
+            description = "관리자 정보를 불러옵니다"
+    )
+    @GetMapping("/profile")
+    public ResponseEntity<Response<AdminProfileResponseDTO>> getAdminProfile(
+            @AuthenticationPrincipal CustomAdminDetails principal
+    ) {
+        return ResponseEntity.ok()
+                .body(Response.success(adminAuthService.getAdminProfile(principal.getAdmin().getAdminId())));
     }
 }

@@ -7,6 +7,7 @@ import com.ayno.aynobe.entity.enums.UserStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.*;
 
 @Getter
@@ -77,6 +78,11 @@ public class User extends BaseTimeEntity {
     @Enumerated(EnumType.STRING)
     @Column(length = 20, nullable = false)
     private UserStatus status = UserStatus.ACTIVE;
+
+    @Column(nullable = false)
+    private boolean marketingAgreed; // 마케팅 수신 동의 여부
+
+    private LocalDateTime marketingAgreedAt;
 
     public void changeNickname(String nickname) {this.nickname = nickname;}
     public void changeProfileImageUrl(String profileImageUrl) {this.profileImageUrl = profileImageUrl;}
