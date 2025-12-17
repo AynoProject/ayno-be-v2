@@ -35,7 +35,14 @@ public class AdminUserService {
         LocalDateTime startAt = (from != null) ? from.atStartOfDay() : null;
         LocalDateTime endAt = (to != null) ? to.atTime(LocalTime.MAX) : null;
 
-        Page<User> userPage = userRepository.searchUsers(status, keyword, startAt, endAt, pageable);
+        Long userId = null;
+        if (keyword != null && keyword.matches("^[0-9]+$")) { // 정규식: 숫자로만 되어있니?
+            try {
+                userId = Long.parseLong(keyword);
+            } catch (NumberFormatException ignored) {}
+        }
+
+        Page<User> userPage = userRepository.searchUsers(status, userId, keyword, startAt, endAt, pageable);
 
         List<AdminUserResponseDTO> content = userPage.getContent().stream()
                 .map(AdminUserResponseDTO::from)

@@ -18,11 +18,18 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("SELECT u FROM User u WHERE " +
             "(:status IS NULL OR u.status = :status) AND " +
-            "(:keyword IS NULL OR u.username LIKE %:keyword% OR u.nickname LIKE %:keyword%) AND " +
             "(:startAt IS NULL OR u.createdAt >= :startAt) AND " +
-            "(:endAt IS NULL OR u.createdAt <= :endAt)")
+            "(:endAt IS NULL OR u.createdAt <= :endAt) AND " +
+            "(" +
+            "   (:userId IS NOT NULL AND u.userId = :userId) OR " +
+            "   (:keyword IS NOT NULL AND (" +
+            "       u.nickname LIKE CONCAT('%', :keyword, '%')" +
+            "   )) OR " +
+            "   (:userId IS NULL AND :keyword IS NULL)" +        // 검색어 없으면 전체 조회
+            ")")
     Page<User> searchUsers(
             @Param("status") UserStatus status,
+            @Param("userId") Long userId,
             @Param("keyword") String keyword,
             @Param("startAt") LocalDateTime startAt,
             @Param("endAt") LocalDateTime endAt,

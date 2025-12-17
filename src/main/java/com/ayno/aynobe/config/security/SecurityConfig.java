@@ -86,7 +86,7 @@ public class SecurityConfig {
                 "https://www.ayno.co.kr",
                 "https://api.ayno.co.kr"
         ));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
 
