@@ -46,7 +46,7 @@ public class AdminUserService {
 
         List<AdminUserResponseDTO> content = userPage.getContent().stream()
                 .map(AdminUserResponseDTO::from)
-                .collect(Collectors.toList());
+                .toList();
 
         return PageResponseDTO.<AdminUserResponseDTO>builder()
                 .content(content)

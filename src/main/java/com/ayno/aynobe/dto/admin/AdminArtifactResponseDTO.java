@@ -17,7 +17,7 @@ import java.time.LocalDateTime;
 @Schema(description = "관리자용 프로젝트 목록 응답 (썸네일 제외, 관리 정보 포함)")
 public class AdminArtifactResponseDTO {
     private Long artifactId;
-    private String title;
+    private String artifactTitle;
     private Long workflowId; // 워크플로우 연결 여부 확인용
     private Long userId;
     private String nickname;
@@ -30,7 +30,7 @@ public class AdminArtifactResponseDTO {
     public static AdminArtifactResponseDTO from(Artifact artifact) {
         return AdminArtifactResponseDTO.builder()
                 .artifactId(artifact.getArtifactId())
-                .title(artifact.getArtifactTitle())
+                .artifactTitle(artifact.getArtifactTitle())
                 .workflowId(artifact.getWorkflow() != null ? artifact.getWorkflow().getWorkflowId() : null)
                 .userId(artifact.getUser().getUserId())
                 .nickname(artifact.getUser().getNickname())
