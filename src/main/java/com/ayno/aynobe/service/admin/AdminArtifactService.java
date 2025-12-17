@@ -20,12 +20,12 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class AdminArtifactService {
     private final ArtifactRepository artifactRepository;
     private final ReportRepository reportRepository;
     private final ReactionRepository reactionRepository;
 
+    @Transactional(readOnly = true)
     public PageResponseDTO<AdminArtifactResponseDTO> getArtifacts(
             VisibilityType status,
             String keyword,
@@ -53,6 +53,7 @@ public class AdminArtifactService {
                 .build();
     }
 
+    @Transactional
     public void deleteArtifact(Long artifactId) {
         Artifact artifact = artifactRepository.findById(artifactId)
                 .orElseThrow(() -> CustomException.notFound("Artifact not found"));
