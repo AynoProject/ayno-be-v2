@@ -63,34 +63,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        boolean isAdminEndpoint = uri.startsWith("/api/admin");
-
-        String accessCookieName = isAdminEndpoint ? CookieFactory.ADMIN_ACCESS_COOKIE : CookieFactory.USER_ACCESS_COOKIE;
-        String refreshCookieName = isAdminEndpoint ? CookieFactory.ADMIN_REFRESH_COOKIE : CookieFactory.USER_REFRESH_COOKIE;
-
         // accessToken 우선 시도
-        String accessToken = getCookieValue(request, accessCookieName);
+        String accessToken = resolveAccessToken(request, uri);
+
         if (accessToken != null) {
             try {
-                processTokenAuthentication(accessToken);
+                processTokenAuthentication(accessToken, request); // request 넘겨서 Details 설정
                 chain.doFilter(request, response);
                 return;
             } catch (AccountStatusException e) {
                 accessDeniedHandler.handle(request, response, new AccessDeniedException(e.getMessage()));
                 return;
-            } catch (RuntimeException ignored) {}
+            } catch (RuntimeException e) {
+                // 토큰 만료 등 오류 시 다음 리프레시 로직으로 진행
+            }
         }
-
         // access 없거나 만료 → refresh 로 재발급 시도
-        String refreshToken = getCookieValue(request, refreshCookieName);
+        String refreshToken = resolveRefreshToken(request, uri);
+
         if (refreshToken != null) {
             try {
-                var tokenInfor = jwtService.payload(refreshToken);
-                if (jwtService.isRefreshTokenValid(tokenInfor)) {
-                    UserDetails principal = loadByRoles(tokenInfor.subject(), tokenInfor.roles());
+                var tokenInfo = jwtService.payload(refreshToken);
+                if (jwtService.isRefreshTokenValid(tokenInfo)) {
+                    UserDetails principal = loadByRoles(tokenInfo.subject(), tokenInfo.roles());
                     String newAccess = jwtService.generateAccessToken(principal);
 
-                    ResponseCookie newCookie = isAdminEndpoint
+                    boolean isAdmin = tokenInfo.roles().contains("ROLE_ADMIN");
+
+                    ResponseCookie newCookie = isAdmin
                             ? cookieFactory.createAdminAccess(newAccess)
                             : cookieFactory.createUserAccess(newAccess);
 
@@ -100,18 +100,40 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             } catch (AccountStatusException e) {
                 accessDeniedHandler.handle(request, response, new AccessDeniedException(e.getMessage()));
                 return;
-            }
-            catch (RuntimeException ignored) {}
+            } catch (RuntimeException ignored) {}
         }
         chain.doFilter(request, response);
     }
 
     // 헬퍼
-    private void processTokenAuthentication(String token) {
+
+    // 토큰 조회 로직 분리
+    private String resolveAccessToken(HttpServletRequest request, String uri) {
+        if (uri.startsWith("/api/admin")) {
+            return getCookieValue(request, CookieFactory.ADMIN_ACCESS_COOKIE);
+        } else {
+            // 공용 경로는 유저 토큰 먼저 보고, 없으면 관리자 토큰 확인 (우선순위는 기획에 따라 변경 가능)
+            String userToken = getCookieValue(request, CookieFactory.USER_ACCESS_COOKIE);
+            if (userToken != null) return userToken;
+            return getCookieValue(request, CookieFactory.ADMIN_ACCESS_COOKIE);
+        }
+    }
+
+    private String resolveRefreshToken(HttpServletRequest request, String uri) {
+        if (uri.startsWith("/api/admin")) {
+            return getCookieValue(request, CookieFactory.ADMIN_REFRESH_COOKIE);
+        } else {
+            String userToken = getCookieValue(request, CookieFactory.USER_REFRESH_COOKIE);
+            if (userToken != null) return userToken;
+            return getCookieValue(request, CookieFactory.ADMIN_REFRESH_COOKIE);
+        }
+    }
+
+    private void processTokenAuthentication(String token, HttpServletRequest request) {
         var tokenInfo = jwtService.payload(token);
         UserDetails principal = loadByRoles(tokenInfo.subject(), tokenInfo.roles());
         if (jwtService.isTokenValid(tokenInfo, principal)) {
-            setAuthentication(null, principal); // request는 필요 없어서 null 처리하거나 수정
+            setAuthentication(request, principal);
         }
     }
 
