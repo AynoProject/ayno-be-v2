@@ -1,11 +1,15 @@
 package com.ayno.aynobe.service.admin;
 
+import com.ayno.aynobe.config.exception.CustomException;
 import com.ayno.aynobe.dto.admin.AdminArtifactResponseDTO;
-import com.ayno.aynobe.dto.admin.AdminUserResponseDTO;
 import com.ayno.aynobe.dto.common.PageResponseDTO;
 import com.ayno.aynobe.entity.Artifact;
+import com.ayno.aynobe.entity.enums.ReportTargetType;
+import com.ayno.aynobe.entity.enums.TargetType;
 import com.ayno.aynobe.entity.enums.VisibilityType;
 import com.ayno.aynobe.repository.ArtifactRepository;
+import com.ayno.aynobe.repository.ReactionRepository;
+import com.ayno.aynobe.repository.ReportRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,13 +17,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class AdminArtifactService {
     private final ArtifactRepository artifactRepository;
+    private final ReportRepository reportRepository;
+    private final ReactionRepository reactionRepository;
 
     public PageResponseDTO<AdminArtifactResponseDTO> getArtifacts(
             VisibilityType status,
@@ -46,5 +51,17 @@ public class AdminArtifactService {
                 .totalPages(artifactPage.getTotalPages())
                 .hasNext(artifactPage.hasNext())
                 .build();
+    }
+
+    public void deleteArtifact(Long artifactId) {
+        Artifact artifact = artifactRepository.findById(artifactId)
+                .orElseThrow(() -> CustomException.notFound("Artifact not found"));
+
+        // 신고 내역 삭제
+        reportRepository.deleteByTargetIdAndTargetType(artifactId, ReportTargetType.ARTIFACT);
+        // 좋아요 삭제
+        reactionRepository.deleteByTargetIdAndTargetType(artifactId, TargetType.ARTIFACT);
+
+        artifactRepository.delete(artifact);
     }
 }

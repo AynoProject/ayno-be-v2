@@ -11,10 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "AdminArtifact", description = "관리자 결과물 관리 API")
 @RestController
@@ -31,6 +28,15 @@ public class AdminArtifactController {
             @ParameterObject Pageable pageable
     ) {
         return ResponseEntity.ok(Response.success(adminArtifactService.getArtifacts(status, keyword, pageable)));
+    }
+
+    @Operation(summary = "프로젝트 강제 삭제", description = "관리자 권한으로 DB에서 완전히 삭제합니다. (신고 내역도 같이 삭제됨)")
+    @DeleteMapping("/{artifactId}")
+    public ResponseEntity<?> deleteArtifact(
+            @PathVariable Long artifactId
+    ) {
+        adminArtifactService.deleteArtifact(artifactId);
+        return ResponseEntity.ok(Response.success("삭제되었습니다"));
     }
 
 }
