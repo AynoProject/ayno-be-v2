@@ -4,12 +4,16 @@ import com.ayno.aynobe.config.exception.CustomException;
 import com.ayno.aynobe.dto.admin.AdminArtifactResponseDTO;
 import com.ayno.aynobe.dto.common.PageResponseDTO;
 import com.ayno.aynobe.entity.Artifact;
+import com.ayno.aynobe.entity.ArtifactMedia;
+import com.ayno.aynobe.entity.Workflow;
 import com.ayno.aynobe.entity.enums.ReportTargetType;
 import com.ayno.aynobe.entity.enums.TargetType;
 import com.ayno.aynobe.entity.enums.VisibilityType;
 import com.ayno.aynobe.repository.ArtifactRepository;
 import com.ayno.aynobe.repository.ReactionRepository;
 import com.ayno.aynobe.repository.ReportRepository;
+import com.ayno.aynobe.repository.StepSectionRepository;
+import com.ayno.aynobe.service.s3.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -24,6 +28,8 @@ public class AdminArtifactService {
     private final ArtifactRepository artifactRepository;
     private final ReportRepository reportRepository;
     private final ReactionRepository reactionRepository;
+    private final StepSectionRepository stepSectionRepository;
+    private final S3Service s3Service;
 
     @Transactional(readOnly = true)
     public PageResponseDTO<AdminArtifactResponseDTO> getArtifacts(
@@ -58,9 +64,29 @@ public class AdminArtifactService {
         Artifact artifact = artifactRepository.findById(artifactId)
                 .orElseThrow(() -> CustomException.notFound("Artifact not found"));
 
-        // 신고 내역 삭제
+        // S3 물리적 파일 삭제
+        Workflow workflow = artifact.getWorkflow();
+        if (workflow != null) {
+
+            Long workflowId = workflow.getWorkflowId();
+
+            // 워크플로우 ID로 모든 섹션의 baseKey를 한번에 조회 (N+1 방지)
+            List<String> sectionBaseKeys = stepSectionRepository.findAllBaseKeysByWorkflowId(workflowId);
+
+            for (String baseKey : sectionBaseKeys) {
+                if (baseKey != null && !baseKey.isBlank()) {
+                    s3Service.deleteS3MediaSet(baseKey);
+                }
+            }
+        }
+        // 아티팩트 본문 미디어 삭제
+        for (ArtifactMedia media : artifact.getMedias()) {
+            s3Service.deleteS3MediaSet(media.getBaseKey());
+        }
+
+
         reportRepository.deleteByTargetIdAndTargetType(artifactId, ReportTargetType.ARTIFACT);
-        // 좋아요 삭제
+
         reactionRepository.deleteByTargetIdAndTargetType(artifactId, TargetType.ARTIFACT);
 
         artifactRepository.delete(artifact);

@@ -173,10 +173,13 @@ public class ArtifactService {
             List<String> sectionBaseKeys = stepSectionRepository.findAllBaseKeysByWorkflowId(workflowId);
 
             for (String baseKey : sectionBaseKeys) {
-                s3Service.deleteS3MediaSet(baseKey);
+                if (baseKey != null && !baseKey.isBlank()) {
+                    s3Service.deleteS3MediaSet(baseKey);
+                }
             }
         }
 
+        // 아티팩트 본문 미디어 삭제
         for (ArtifactMedia media : artifact.getMedias()) {
             s3Service.deleteS3MediaSet(media.getBaseKey());
         }
