@@ -44,20 +44,17 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         String uri = request.getRequestURI();
 
-        // 1. 화이트리스트 및 이미 인증된 경우 패스
         if (isWhitelisted(uri) || isAlreadyAuthenticated()) {
             chain.doFilter(request, response);
             return;
         }
 
         try {
-            // 2. Access Token으로 인증 시도
             if (tryAccessTokenAuthentication(request, uri)) {
                 chain.doFilter(request, response);
                 return;
             }
 
-            // 3. Access 실패 시, Refresh Token으로 재발급 및 인증 시도
             if (tryRefreshTokenAuthentication(request, response, uri)) {
                 chain.doFilter(request, response);
                 return;
@@ -68,11 +65,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 4. 인증 실패했거나 토큰이 없는 경우 -> 익명 사용자로 다음 필터 진행
+        // 인증 실패했거나 토큰이 없는 경우 -> 익명 사용자로 다음 필터 진행
         chain.doFilter(request, response);
     }
 
-    // --- [Core Logic 1] Access Token 처리 ---
+    // --- Access Token 처리 ---
     private boolean tryAccessTokenAuthentication(HttpServletRequest request, String uri) {
         String token = resolveToken(request, uri, CookieFactory.ADMIN_ACCESS_COOKIE, CookieFactory.USER_ACCESS_COOKIE);
         if (token == null) return false;
@@ -91,7 +88,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return false;
     }
 
-    // --- [Core Logic 2] Refresh Token 처리 (재발급) ---
+    // --- Refresh Token 처리 (재발급) ---
     private boolean tryRefreshTokenAuthentication(HttpServletRequest request, HttpServletResponse response, String uri) {
         String token = resolveToken(request, uri, CookieFactory.ADMIN_REFRESH_COOKIE, CookieFactory.USER_REFRESH_COOKIE);
         if (token == null) return false;
@@ -115,7 +112,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return false;
     }
 
-    // --- [Helpers] ---
+    // --- Helpers ---
 
     private void reissueCookie(HttpServletResponse response, String accessToken, List<String> roles) {
         boolean isAdmin = roles != null && roles.contains("ROLE_ADMIN");

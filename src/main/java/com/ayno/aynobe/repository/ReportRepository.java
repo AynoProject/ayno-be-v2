@@ -26,4 +26,6 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
             Pageable pageable);
 
     boolean existsByReporterAndTargetIdAndTargetType(User reporter, Long targetId, ReportTargetType targetType);
+
+    void deleteByTargetIdAndTargetType(Long targetId, ReportTargetType targetType);
 }

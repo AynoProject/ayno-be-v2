@@ -75,4 +75,23 @@ public interface ArtifactRepository extends JpaRepository<Artifact, Long> {
             @Param("keyword") String keyword,
             Pageable pageable
     );
+
+    @Query("SELECT a FROM Artifact a " +
+            "LEFT JOIN a.user u " + // 작성자 정보 검색을 위해 조인
+            "WHERE " +
+            "(:status IS NULL OR a.visibility = :status) AND " + // 상태 필터
+            "(" +
+            "   (:artifactId IS NOT NULL AND a.artifactId = :artifactId) OR " + // ID 검색
+            "   (:keyword IS NOT NULL AND (" +
+            "       a.artifactTitle LIKE CONCAT('%', :keyword, '%') OR " +      // 제목 검색
+            "       u.nickname LIKE CONCAT('%', :keyword, '%') OR " +   // 닉네임 검색
+            "       u.username LIKE CONCAT('%', :keyword, '%')" +          // 이메일 검색
+            "   )) OR " +
+            "   (:artifactId IS NULL AND :keyword IS NULL)" + // 검색어 없으면 전체
+            ")")
+    Page<Artifact> searchArtifactsForAdmin(
+            @Param("status") VisibilityType status,
+            @Param("artifactId") Long artifactId,
+            @Param("keyword") String keyword,
+            Pageable pageable);
 }

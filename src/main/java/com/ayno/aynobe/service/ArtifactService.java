@@ -8,10 +8,10 @@ import com.ayno.aynobe.entity.ArtifactMedia;
 import com.ayno.aynobe.entity.User;
 import com.ayno.aynobe.entity.Workflow;
 import com.ayno.aynobe.entity.enums.FlowType;
+import com.ayno.aynobe.entity.enums.ReportTargetType;
+import com.ayno.aynobe.entity.enums.TargetType;
 import com.ayno.aynobe.entity.enums.VisibilityType;
-import com.ayno.aynobe.repository.ArtifactRepository;
-import com.ayno.aynobe.repository.StepSectionRepository;
-import com.ayno.aynobe.repository.WorkflowRepository;
+import com.ayno.aynobe.repository.*;
 import com.ayno.aynobe.service.s3.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -31,6 +31,8 @@ public class ArtifactService {
     private final ArtifactRepository artifactRepository;
     private final WorkflowRepository workflowRepository;
     private final StepSectionRepository stepSectionRepository;
+    private final ReportRepository reportRepository;
+    private final ReactionRepository reactionRepository;
     private final S3Service s3Service;
 
     public PageResponseDTO<ArtifactListItemResponseDTO> listPublic(
@@ -162,7 +164,7 @@ public class ArtifactService {
             throw CustomException.forbidden("본인이 등록한 결과물만 삭제할 수 있습니다.");
         }
 
-        // 1. S3 물리적 파일 삭제
+        // S3 물리적 파일 삭제
         Workflow workflow = artifact.getWorkflow();
         if (workflow != null) {
             Long workflowId = workflow.getWorkflowId();
@@ -171,15 +173,21 @@ public class ArtifactService {
             List<String> sectionBaseKeys = stepSectionRepository.findAllBaseKeysByWorkflowId(workflowId);
 
             for (String baseKey : sectionBaseKeys) {
-                s3Service.deleteS3MediaSet(baseKey);
+                if (baseKey != null && !baseKey.isBlank()) {
+                    s3Service.deleteS3MediaSet(baseKey);
+                }
             }
         }
 
+        // 아티팩트 본문 미디어 삭제
         for (ArtifactMedia media : artifact.getMedias()) {
             s3Service.deleteS3MediaSet(media.getBaseKey());
         }
 
-        // 2. DB 삭제
+        reportRepository.deleteByTargetIdAndTargetType(artifactId, ReportTargetType.ARTIFACT);
+
+        reactionRepository.deleteByTargetIdAndTargetType(artifactId, TargetType.ARTIFACT);
+
         artifactRepository.delete(artifact);
 
         return ArtifactDeleteResponseDTO.builder()

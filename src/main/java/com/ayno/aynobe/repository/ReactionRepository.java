@@ -23,4 +23,6 @@ public interface ReactionRepository extends JpaRepository<Reaction, Long> {
                                       @Param("targetType") TargetType targetType,
                                       @Param("targetId") Long targetId,
                                       @Param("reactionType") ReactionType reactionType);
+
+    void deleteByTargetIdAndTargetType(Long targetId, TargetType targetType);
 }
