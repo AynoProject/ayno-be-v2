@@ -42,6 +42,19 @@ public class ArtifactController {
         ));
     }
 
+    @Operation(summary = "메인 리스트 및 검색", description = "공개된(PUBLIC) 결과물만 조회합니다. 카테고리가 없으면 전체 조회입니다.")
+    @GetMapping("/search")
+    public ResponseEntity<Response<PageResponseDTO<ArtifactListItemResponseDTO>>> getArtifacts(
+            @RequestParam(required = false) FlowType category,
+            @RequestParam(required = false, name = "q") String keyword,
+            @RequestParam(required = false, defaultValue = "createdAt") String sort,
+            @ParameterObject Pageable pageable
+    ) {
+        return ResponseEntity.ok(
+                Response.success(artifactService.searchPublicArtifacts(category, keyword, sort, pageable))
+        );
+    }
+
     @Operation(
             summary = "결과물 상세 조회",
             description = "미디어(이미지/영상/파일) 포함")
@@ -110,19 +123,6 @@ public class ArtifactController {
     ) {
         var res = publishService.unpublishArtifact(principal.getUser(), artifactId);
         return ResponseEntity.ok(res);
-    }
-
-    @Operation(summary = "메인 리스트 및 검색", description = "공개된(PUBLIC) 결과물만 조회합니다. 카테고리가 없으면 전체 조회입니다.")
-    @GetMapping("/search")
-    public ResponseEntity<Response<PageResponseDTO<ArtifactListItemResponseDTO>>> getArtifacts(
-            @RequestParam(required = false) FlowType category, // null이면 전체(All)
-            @RequestParam(required = false, name = "q") String keyword,
-            @RequestParam(required = false, defaultValue = "createdAt") String sort,
-            @ParameterObject Pageable pageable
-    ) {
-        return ResponseEntity.ok(
-                Response.success(artifactService.searchPublicArtifacts(category, keyword, sort, pageable))
-        );
     }
 
 }

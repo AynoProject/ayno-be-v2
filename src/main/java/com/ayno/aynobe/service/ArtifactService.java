@@ -54,6 +54,35 @@ public class ArtifactService {
                 .build();
     }
 
+    public PageResponseDTO<ArtifactListItemResponseDTO> searchPublicArtifacts(
+            FlowType category,
+            String keyword,
+            String sort,
+            Pageable pageable
+    ) {
+        // 정렬 조건 처리
+        Pageable sortedPageable = PageRequest.of(
+                pageable.getPageNumber(),
+                pageable.getPageSize(),
+                resolveSort(sort)
+        );
+
+        Page<Artifact> artifactPage = artifactRepository.searchPublic(category, keyword, sortedPageable);
+
+        List<ArtifactListItemResponseDTO> content = artifactPage.getContent().stream()
+                .map(ArtifactListItemResponseDTO::from)
+                .toList();
+
+        return PageResponseDTO.<ArtifactListItemResponseDTO>builder()
+                .content(content)
+                .page(artifactPage.getNumber())
+                .size(artifactPage.getSize())
+                .totalElements(artifactPage.getTotalElements())
+                .totalPages(artifactPage.getTotalPages())
+                .hasNext(artifactPage.hasNext())
+                .build();
+    }
+
     @Transactional
     public ArtifactDetailResponseDTO getDetail(Long artifactId) {
         Artifact artifact = artifactRepository.findDetailById(artifactId)
@@ -192,35 +221,6 @@ public class ArtifactService {
 
         return ArtifactDeleteResponseDTO.builder()
                 .artifactId(artifactId)
-                .build();
-    }
-
-    public PageResponseDTO<ArtifactListItemResponseDTO> searchPublicArtifacts(
-            FlowType category,
-            String keyword,
-            String sort,
-            Pageable pageable
-    ) {
-        // 1. 정렬 조건 처리 (Pageable 객체 재생성)
-        Pageable sortedPageable = PageRequest.of(
-                pageable.getPageNumber(),
-                pageable.getPageSize(),
-                resolveSort(sort)
-        );
-
-        // 2. 검색 실행
-        Page<Artifact> result = artifactRepository.searchPublic(category, keyword, sortedPageable);
-
-        // 3. DTO 변환 (우리가 아까 만든 Light DTO 사용)
-        return PageResponseDTO.<ArtifactListItemResponseDTO>builder()
-                .content(result.getContent().stream()
-                        .map(ArtifactListItemResponseDTO::from)
-                        .toList())
-                .page(result.getNumber())
-                .size(result.getSize())
-                .totalElements(result.getTotalElements())
-                .totalPages(result.getTotalPages())
-                .hasNext(result.hasNext())
                 .build();
     }
 

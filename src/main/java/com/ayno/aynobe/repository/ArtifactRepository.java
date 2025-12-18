@@ -66,10 +66,14 @@ public interface ArtifactRepository extends JpaRepository<Artifact, Long> {
     int increaseViewCount(Long artifactId);
 
     @Query("SELECT a FROM Artifact a " +
-            "JOIN FETCH a.user u " +  // N+1 방지: 작성자 정보 한 번에 로딩
-            "WHERE a.visibility = 'PUBLIC' " +
-            "AND (:category IS NULL OR a.category = :category) " +
-            "AND (:keyword IS NULL OR a.artifactTitle LIKE %:keyword%)") // 제목 검색
+            "LEFT JOIN a.user u " +
+            "WHERE " +
+            "a.visibility = 'PUBLIC' AND " +
+            "(:category IS NULL OR a.category = :category) AND " +
+            "(" +
+            "   :keyword IS NULL OR " +
+            "   a.artifactTitle LIKE CONCAT('%', :keyword, '%')" +// 작성자 검색
+            ")")
     Page<Artifact> searchPublic(
             @Param("category") FlowType category,
             @Param("keyword") String keyword,
