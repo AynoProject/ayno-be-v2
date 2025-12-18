@@ -27,19 +27,17 @@ public class ArtifactController {
     private final ArtifactService artifactService;
     private final PublishService publishService;
 
-    @Operation(
-            summary = "공개 결과물 목록 조회",
-            description = "visibility=PUBLIC 결과물을 최신순으로 페이지네이션하여 반환")
+    @Operation(summary = "메인 리스트 및 검색", description = "공개된(PUBLIC) 결과물만 조회합니다. 카테고리가 없으면 전체 조회입니다.")
     @GetMapping
-    public ResponseEntity<Response<PageResponseDTO<ArtifactListItemResponseDTO>>> list(
+    public ResponseEntity<Response<PageResponseDTO<ArtifactListItemResponseDTO>>> getArtifacts(
             @RequestParam(required = false) FlowType category,
-            @RequestParam(defaultValue = "0") int page,   // 0-base
-            @RequestParam(defaultValue = "12") int size,
-            @RequestParam(defaultValue = "createdAt,desc") String sort // createdAt|likeCount|viewCount
+            @RequestParam(required = false, name = "q") String keyword,
+            @RequestParam(required = false, defaultValue = "createdAt") String sort,
+            @ParameterObject Pageable pageable
     ) {
-        return ResponseEntity.ok(Response.success(
-                artifactService.listPublic(category, page, size, sort)
-        ));
+        return ResponseEntity.ok(
+                Response.success(artifactService.getPublicArtifacts(category, keyword, sort, pageable))
+        );
     }
 
     @Operation(
@@ -110,19 +108,6 @@ public class ArtifactController {
     ) {
         var res = publishService.unpublishArtifact(principal.getUser(), artifactId);
         return ResponseEntity.ok(res);
-    }
-
-    @Operation(summary = "메인 리스트 및 검색", description = "공개된(PUBLIC) 결과물만 조회합니다. 카테고리가 없으면 전체 조회입니다.")
-    @GetMapping("/search")
-    public ResponseEntity<Response<PageResponseDTO<ArtifactListItemResponseDTO>>> getArtifacts(
-            @RequestParam(required = false) FlowType category, // null이면 전체(All)
-            @RequestParam(required = false, name = "q") String keyword,
-            @RequestParam(required = false, defaultValue = "createdAt") String sort,
-            @ParameterObject Pageable pageable
-    ) {
-        return ResponseEntity.ok(
-                Response.success(artifactService.searchPublicArtifacts(category, keyword, sort, pageable))
-        );
     }
 
 }
