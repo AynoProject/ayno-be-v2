@@ -5,7 +5,6 @@ import com.ayno.aynobe.entity.enums.FlowType;
 import com.ayno.aynobe.entity.enums.VisibilityType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -14,14 +13,23 @@ import org.springframework.data.repository.query.Param;
 import java.util.Optional;
 
 public interface ArtifactRepository extends JpaRepository<Artifact, Long> {
-    @EntityGraph(attributePaths = {"user"})
-    Page<Artifact> findByVisibility(VisibilityType visibility, Pageable pageable);
-
-    @EntityGraph(attributePaths = {"user"})
-    Page<Artifact> findByVisibilityAndCategory(VisibilityType visibility, FlowType category, Pageable pageable);
-
     boolean existsBySlug(String slug);
     boolean existsBySlugAndArtifactIdNot(String slug, Long artifactId);
+
+    @Query("SELECT a FROM Artifact a " +
+            "LEFT JOIN a.user u " +
+            "WHERE " +
+            "a.visibility = 'PUBLIC' AND " +
+            "(:category IS NULL OR a.category = :category) AND " +
+            "(" +
+            "   :keyword IS NULL OR " +
+            "   a.artifactTitle LIKE CONCAT('%', :keyword, '%')" +// 작성자 검색
+            ")")
+    Page<Artifact> searchPublic(
+            @Param("category") FlowType category,
+            @Param("keyword") String keyword,
+            Pageable pageable
+    );
 
     @Query("SELECT a FROM Artifact a " +
             "JOIN FETCH a.user u " +
@@ -64,21 +72,6 @@ public interface ArtifactRepository extends JpaRepository<Artifact, Long> {
             "set a.viewCount = a.viewCount + 1 " +
             "where a.artifactId = :artifactId")
     int increaseViewCount(Long artifactId);
-
-    @Query("SELECT a FROM Artifact a " +
-            "LEFT JOIN a.user u " +
-            "WHERE " +
-            "a.visibility = 'PUBLIC' AND " +
-            "(:category IS NULL OR a.category = :category) AND " +
-            "(" +
-            "   :keyword IS NULL OR " +
-            "   a.artifactTitle LIKE CONCAT('%', :keyword, '%')" +// 작성자 검색
-            ")")
-    Page<Artifact> searchPublic(
-            @Param("category") FlowType category,
-            @Param("keyword") String keyword,
-            Pageable pageable
-    );
 
     @Query("SELECT a FROM Artifact a " +
             "LEFT JOIN a.user u " + // 작성자 정보 검색을 위해 조인

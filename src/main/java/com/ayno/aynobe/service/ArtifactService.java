@@ -35,26 +35,7 @@ public class ArtifactService {
     private final ReactionRepository reactionRepository;
     private final S3Service s3Service;
 
-    public PageResponseDTO<ArtifactListItemResponseDTO> listPublic(
-            FlowType category, int page, int size, String sort
-    ) {
-        Pageable pageable = PageRequest.of(page, size, resolveSort(sort));
-
-        Page<Artifact> result = (category == null)
-                ? artifactRepository.findByVisibility(VisibilityType.PUBLIC, pageable)
-                : artifactRepository.findByVisibilityAndCategory(VisibilityType.PUBLIC, category, pageable);
-
-        return PageResponseDTO.<ArtifactListItemResponseDTO>builder()
-                .content(result.getContent().stream().map(ArtifactListItemResponseDTO::from).toList())
-                .page(result.getNumber())
-                .size(result.getSize())
-                .totalElements(result.getTotalElements())
-                .totalPages(result.getTotalPages())
-                .hasNext(result.hasNext())
-                .build();
-    }
-
-    public PageResponseDTO<ArtifactListItemResponseDTO> searchPublicArtifacts(
+    public PageResponseDTO<ArtifactListItemResponseDTO> getPublicArtifacts(
             FlowType category,
             String keyword,
             String sort,
